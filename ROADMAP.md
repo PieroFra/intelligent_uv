@@ -106,7 +106,7 @@ accepted only as hypotheses with a reproduction procedure attached.
 
 | # | Claim | Reported value | Appears in tree as | Reproduction requires |
 |---|---|---|---|---|
-| B1 | Island overlap/grouping speed-up, 0.34.0 | 3.78 s → 0.36 s, 315 islands | README prose, `distortion.py` docstring | A timed stage on the rifle mesh; check the **0.36 s endpoint** only, because no 0.33.0 tree exists |
+| B1 | Island overlap/grouping speed-up, 0.34.0 | 3.78 s → 0.36 s, 315 islands | README prose, `distortion.py` docstring | A timed stage on the gate asset mesh (G1); check the **0.36 s endpoint** only, because no 0.33.0 tree exists |
 | B2 | Post-unwrap stage time, 0.34.0 | 0.72 s, 47k faces | **Nothing** | A defined stage boundary, the mesh, the build hash, a rerun |
 | B3 | Overlap containment (nested island) fix | fixed | README prose; containment path in `distortion.py` | A regression check that fails when the path is removed |
 | B4 | Otsu crease-threshold fix | fixed | README prose; absolute crease angle in `auto_params.py` / `curvature.py` | A regression check on a mesh whose sharpest edge is far below 30° |
@@ -132,10 +132,31 @@ public. Each gate produces a dated record that stays with the release.
 
 | Gate | What is executed | Pass criteria | Evidence to keep |
 |---|---|---|---|
-| **G1 — Release gate on the rifle asset** | Install 0.34.0 the documented way, **restart Blender**, open the rifle model, run **Check Mesh**, then **Unwrap** | Check Mesh report read and its blockers/warnings accounted for; Unwrap finishes with no traceback and no silent zero-area islands; island count and quality numbers recorded; console output captured | Gate log with date, add-on version, Blender build hash, mesh vertex/face/island counts, Check Mesh summary, timings, unsaved warnings |
+| **G1 — Release gate on the CC0 rifle asset** | Install 0.34.0 the documented way, **restart Blender**, open the gate asset — Poly Haven `bolt_action_rifle_7_62`, CC0, author Mateusz Sadek, <https://polyhaven.com/a/bolt_action_rifle_7_62> — re-downloaded from that source and hash-verified, run **Check Mesh**, then **Unwrap** | Check Mesh report read and its blockers/warnings accounted for; Unwrap finishes with no traceback and no silent zero-area islands; island count and quality numbers recorded; console output captured | Gate log with date, add-on version, Blender build hash, asset source URL and per-file SHA-256, mesh vertex/face/island counts, Check Mesh summary, timings, unsaved warnings |
 | **G2 — RizomUV manual round trip** | Export UV to FBX with the RizomUV launch option, unwrap and save in RizomUV, Import UV from FBX / Import Last | UVs return by position onto the same object; layer name and match reported; no hang, no orphaned process | Dated log: RizomUV version, export path, import path, object and layer name, match/failure counts |
 | **G3 — Clean install lifecycle** | Fresh Blender config, install ZIP, restart, enable, Check Mesh, disable, enable again, restart, enable, remove | No traceback in the console at any step; documented restart requirement reproduced, not worked around | Console log per step for each target Blender version |
 | **G4 — Publication authorisation** | Owner reviews any asset, `.blend`, FBX, screenshot or log intended for the public case study | Explicit approval recorded before publication; sanitised if paths or names leak | Written approval note |
+
+**G1 asset substitution (2026-10-22).** The production rifle the gate was
+originally written for is no longer available, so the owner has accepted the CC0
+Poly Haven model **`bolt_action_rifle_7_62`** (author Mateusz Sadek, CC0,
+<https://polyhaven.com/a/bolt_action_rifle_7_62>) as the gate asset. The gate is
+executed on that asset **re-downloaded from the source above**, not on a local
+copy of unknown provenance, and the download is hash-verified file by file
+exactly as recorded in `_esperimenti/FONTE.md` (SHA-256 table for the 1K glTF
+set). That file is read-only input for this purpose: nothing inside
+`_esperimenti/` is modified by a gate run. Source URL, download date and hashes
+belong in the gate log so a third party can rebuild the same mesh.
+
+**G1 requires a real install and a restart.** The gate is an interactive session
+on Blender with the add-on installed the documented way (ZIP from Preferences on
+a fresh configuration), **Blender restarted afterwards**, then Check Mesh →
+Unwrap. The exploratory runs recorded under `_esperimenti/` do not satisfy it:
+they were headless (`--background`, factory startup), with the add-on registered
+in-process from source instead of installed, no restart, and no interactive
+product session. Per `AGENTS.md` §3 they are **class non-gate**: they may inform
+the procedure and suggest where to look, but they are not G1 evidence and none of
+their numbers may be cited as a gate result.
 
 **What G1 blocks, and what it does not.**
 
@@ -157,28 +178,41 @@ Phases are sequential in priority, not in wall-clock time: Phase 3 and the
 research in Phase 4 can start while G1 is pending. Nothing after Phase 1 may
 publish a quality claim before G1 passes.
 
-### Phase 1 — Release gate on the rifle asset (blocking)
+### Phase 1 — Release gate on the CC0 rifle asset (blocking)
 
 **Why:** the product is the unwrap, not the registration. No automated test in
-this repository runs the pipeline on a real 47k-face mesh, and every performance
-figure currently published is class (b).
+this repository runs the pipeline on a real asset, and every performance figure
+currently published is class (b). The accepted gate asset is the CC0 Poly Haven
+model **`bolt_action_rifle_7_62`**, expected to report **19,985 faces** — a
+number the run confirms, not one assumed here; the production rifle the gate was
+first written for no longer exists.
 
-1. Write a short, repeatable gate procedure: exact install step, restart, file,
-   object, buttons pressed, values recorded. It must be executable by someone
-   else without asking questions.
-2. Install 0.34.0 and **restart Blender**. Record the build hash and add-on
-   version; a run without the restart does not satisfy the gate.
-3. Run **Check Mesh** on the rifle. Keep the full report, including blockers,
-   warnings and the counts it prints. If it blocks, record why and stop; that is
-   a gate failure, not a reason to work around the check.
+1. Write a short, repeatable gate procedure: exact install step, restart, asset
+   download and hash check, file, object, buttons pressed, values recorded. It
+   must be executable by someone else without asking questions.
+2. Build the installable ZIP from the current tree with
+   `.opencode\scripts\package_release.ps1` — output in `dist\`, which is
+   **gitignored**, so rebuild it after the documentation commits and immediately
+   before the gate. Then install 0.34.0 the documented way (ZIP from Preferences,
+   fresh configuration) and **restart Blender**. Record the build hash and add-on
+   version; a run without the install and the restart does not satisfy the gate.
+3. Re-download the gate asset from <https://polyhaven.com/a/bolt_action_rifle_7_62>
+   and verify every file's hash against the table in `_esperimenti/FONTE.md`, then
+   run **Check Mesh** on it. Keep the full report, including blockers, warnings
+   and the counts it prints. If it blocks, record why and stop; that is a gate
+   failure, not a reason to work around the check.
 4. Run **Unwrap**. Record wall-clock time, island count, fill/efficiency,
    distortion summary, unsolved-island count and the exact console lines.
-5. Compare against the README's asset statements (47k faces, 214 non-manifold
-   edges, 46 disconnected pieces, 16 of 183 unsolved islands). Confirm whether
-   the rifle in the log is the same asset; if not, say so and do not merge the
-   numbers.
+5. Do not compare against the figures of the lost rifle: **47k faces, 214
+   non-manifold edges, 46 disconnected pieces, 16 of 183 unsolved islands are
+   historical figures from the lost asset — informational only, not pass
+   criteria**, and they cannot be reproduced because the asset is gone. Instead
+   **record what this asset reports**: vertices, faces, pieces, island count and
+   unsolved islands as printed by this run, against the expected 19,985 faces.
+   If a measured count differs from 19,985, record the measured value and say why
+   (asset variant, separate objects joined or left apart).
 6. Reproduce or refute **B1** and **B2**: time the island-grouping stage and the
-   post-unwrap stage separately on the recorded mesh. If the add-on does not
+   post-unwrap stage separately on the recorded gate mesh. If the add-on does not
    expose stage timers, run a profiling pass and define the boundaries in the
    log. Check the **0.36 s** endpoint; the 3.78 s baseline is not recoverable
    from this repository.
@@ -193,8 +227,8 @@ figure currently published is class (b).
 
 **Done when**
 
-- The gate log exists, is dated, and names build, version, mesh and stage
-  boundaries.
+- The gate log exists, is dated, and names build, version, asset source URL plus
+  per-file hashes, mesh and stage boundaries.
 - Check Mesh and Unwrap both completed, or the failure is written down as the
   result.
 - B1–B4 are each marked **reproduced** or **refuted**, with the number that was
@@ -426,7 +460,7 @@ different review, and the answer changes what Phase 5 ships.
 
 ---
 
-### Phase 8 — Portfolio case study on the rifle
+### Phase 8 — Portfolio case study on the gate asset
 
 **Why:** a before/after on a real asset is the strongest honest evidence the
 project can offer — provided every number comes from a log and the asset is
@@ -555,7 +589,8 @@ Known practical constraints:
 **Blocking gates**
 
 - [ ] **G1** — clean install, Blender restarted, Check Mesh and Unwrap run on the
-      rifle, log kept, B1–B4 marked reproduced or refuted.
+      CC0 gate asset (`bolt_action_rifle_7_62`, re-downloaded and hash-verified),
+      log kept, B1–B4 marked reproduced or refuted.
 - [ ] **G4** — owner authorisation recorded for every asset, screenshot and log
       intended for publication.
 
