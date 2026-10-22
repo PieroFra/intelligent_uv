@@ -79,7 +79,7 @@ from .ui import VIEW3D_PT_IntelligentUV
 
 bl_info = {
     "name": "Intelligent UV Mapping",
-    "author": "Your Name",
+    "author": "Pierfrancesco Diodato",
     "version": (0, 34, 0),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar (N) > Intelligent UV",
@@ -99,6 +99,11 @@ CLASSES = (
     VIEW3D_PT_IntelligentUV,
 )
 
+# Classes this module registered, in registration order. `bpy.types` does not
+# list every registered type (PropertyGroups in particular), so a second
+# `register()` cannot rely on it to find what the first one left behind.
+_registered_classes = []
+
 
 def _unregister_class_safe(cls):
     try:
@@ -110,16 +115,37 @@ def _unregister_class_safe(cls):
         pass
 
 
+def _registered_name(cls):
+    """Returns the attribute under which Blender stores a registered class."""
+    # Operators live under their bl_idname; every other type under __name__.
+    if issubclass(cls, bpy.types.Operator):
+        return getattr(cls, "bl_idname", cls.__name__)
+    return cls.__name__
+
+
 def register():
     """Registers every class and attaches the settings to the Scene."""
-    # A class already present under this name means a previous version of the
-    # add-on is still loaded in this session. Re-registering over it is safe;
-    # reloading its module would not be, so the user is told to restart rather
-    # than left with half of each version running.
-    stale = any(hasattr(bpy.types, cls.__name__) for cls in CLASSES)
+    # Dropping the pointer clears the settings stored on every scene, so their
+    # values are read first and written back once the pointer is re-attached.
+    snapshot = {}
+    for scene in bpy.data.scenes:
+        settings = getattr(scene, "intelligent_uv_settings", None)
+        if settings is None:
+            continue
+        values = {}
+        for prop in settings.bl_rna.properties:
+            if prop.identifier == "rna_type" or prop.is_readonly:
+                continue
+            try:
+                values[prop.identifier] = getattr(settings, prop.identifier)
+            except Exception:
+                # A: a value that cannot be read is skipped instead of
+                # aborting the whole registration.
+                continue
+        snapshot[scene] = values
 
-    # The Scene pointer must go before the PropertyGroup it points at is
-    # replaced, or the RNA reference outlives the class it targets.
+    # The pointer must go before the PropertyGroup it points at is replaced,
+    # or the RNA reference outlives the class it targets.
     if hasattr(bpy.types.Scene, "intelligent_uv_settings"):
         try:
             del bpy.types.Scene.intelligent_uv_settings
@@ -128,14 +154,43 @@ def register():
             # part-way through; removing it twice is not an error worth raising.
             pass
 
-    for cls in CLASSES:
-        if hasattr(bpy.types, cls.__name__):
-            _unregister_class_safe(cls)
-        bpy.utils.register_class(cls)
+    # A second call in the same session first removes what the previous one
+    # registered: Blender refuses a class that is still registered, and the
+    # types it does not expose under `bpy.types` (PropertyGroups above all)
+    # cannot be found again by name.
+    while _registered_classes:
+        _unregister_class_safe(_registered_classes.pop())
 
-    bpy.types.Scene.intelligent_uv_settings = bpy.props.PointerProperty(
-        type=IntelligentUVProperties
-    )
+    # Anything still present under a registered name was left by another load
+    # of this add-on. Re-registering over it is safe; reloading its module
+    # would not be, so the user is told to restart rather than left with half
+    # of each version running.
+    stale = any(hasattr(bpy.types, _registered_name(cls)) for cls in CLASSES)
+
+    try:
+        for cls in CLASSES:
+            if hasattr(bpy.types, _registered_name(cls)):
+                _unregister_class_safe(cls)
+            bpy.utils.register_class(cls)
+            _registered_classes.append(cls)
+    finally:
+        # The Scene must never be left without its pointer, even when one of
+        # the classes above failed to register.
+        if not hasattr(bpy.types.Scene, "intelligent_uv_settings"):
+            bpy.types.Scene.intelligent_uv_settings = bpy.props.PointerProperty(
+                type=IntelligentUVProperties
+            )
+        for scene, values in snapshot.items():
+            settings = getattr(scene, "intelligent_uv_settings", None)
+            if settings is None:
+                continue
+            for identifier, value in values.items():
+                try:
+                    setattr(settings, identifier, value)
+                except Exception:
+                    # B: a value that no longer fits the property is dropped
+                    # rather than leaving the scene without its settings.
+                    continue
 
     if stale:
         print(

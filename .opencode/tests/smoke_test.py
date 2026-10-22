@@ -25,6 +25,10 @@ import bpy  # noqa: E402  (deve venire dopo la preparazione di sys.path)
 STATE = {}
 RESULTS = []
 
+# Proprieta' usata per provare che i valori sopravvivono a un secondo register().
+SNAPSHOT_PROP = "curvature_threshold"
+SNAPSHOT_VALUE = 42.0
+
 
 def check(name, fn):
     """Esegue un controllo e registra l'esito senza interrompere gli altri."""
@@ -83,12 +87,18 @@ def do_register():
 
 
 def do_pointer():
+    settings = _scene_settings()
+    return "puntatore presente"
+
+
+def _scene_settings():
+    """Restituisce il PropertyGroup della scena o solleva se il puntatore manca."""
     if not hasattr(bpy.types.Scene, "intelligent_uv_settings"):
         raise AttributeError("Scene.intelligent_uv_settings assente")
     settings = bpy.context.scene.intelligent_uv_settings
     if settings is None:
         raise ValueError("il puntatore sulla scena e' vuoto")
-    return "puntatore presente"
+    return settings
 
 
 def _rna_name(cls):
@@ -159,6 +169,46 @@ def do_pointer_removed():
     return "puntatore rimosso"
 
 
+def do_double_register():
+    """register() due volte di fila: la scena deve conservare il suo PropertyGroup.
+
+    Il secondo register() sostituisce le classi (e quindi il PropertyGroup) mentre
+    l'RNA della scena punta ancora alle vecchie: se il puntatore non viene
+    riagganciato, `Scene.intelligent_uv_settings` sparisce e ogni accesso
+    successivo solleva AttributeError. Il controllo parte da addon deregistrato e
+    ripulisce con unregister() anche quando fallisce, cosi' i controlli seguenti
+    trovano sempre una scena pulita.
+    """
+    mod = package()
+    failure = ""
+    try:
+        mod.register()
+        _scene_settings().curvature_threshold = SNAPSHOT_VALUE
+        mod.register()
+        settings = _scene_settings()
+        if not any(p.identifier == SNAPSHOT_PROP for p in settings.bl_rna.properties):
+            raise AttributeError(
+                "proprieta' '{0}' assente dopo il secondo register()".format(SNAPSHOT_PROP)
+            )
+        value = getattr(settings, SNAPSHOT_PROP)
+        if abs(value - SNAPSHOT_VALUE) > 1e-6:
+            raise ValueError(
+                "'{0}' non conservata: {1}".format(SNAPSHOT_PROP, value)
+            )
+    except Exception as exc:  # noqa: BLE001 - l'esito va riportato, non propagato
+        failure = "{0}: {1}".format(type(exc).__name__, exc)
+    finally:
+        try:
+            mod.unregister()
+        except Exception as exc:  # noqa: BLE001 - la pulizia non deve mascherare l'esito
+            failure = failure or "unregister: {0}: {1}".format(type(exc).__name__, exc)
+        if hasattr(bpy.types.Scene, "intelligent_uv_settings"):
+            failure = failure or "unregister non ha rimosso Scene.intelligent_uv_settings"
+    if failure:
+        raise RuntimeError(failure)
+    return "puntatore e proprieta' conservati, scena ripulita"
+
+
 check("compilazione", do_compile)
 check("import", do_import)
 check("bl_info", do_bl_info)
@@ -170,6 +220,7 @@ check("operatori", do_operators)
 check("proprieta", do_properties)
 check("unregister", do_unregister)
 check("pointer_rimosso", do_pointer_removed)
+check("doppio_register", do_double_register)
 check("re-register", do_register)
 check("unregister_finale", do_unregister)
 
