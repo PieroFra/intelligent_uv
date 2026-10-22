@@ -679,10 +679,18 @@ the face normals (`face_normals_np`), and the curvature estimator and seam
 planner compute every dihedral angle in one numpy pass. The scalar path is
 kept and tested to agree within 1e-6 degrees.
 
-**There is a test suite.** `tests/test_core.py` stubs `bpy`/`bmesh` and tests
-the pure-logic modules (Lua serializer, Otsu estimator, union-find regions,
-seam pruning, region merging, overlap maths) with a plain Python interpreter:
-`python tests/test_core.py`.
+**There is a smoke test.** `.opencode/tests/smoke_test.py` runs inside Blender
+and performs **14 checks** on import, registration, the panel, the operators,
+the properties exposed in the UI and unregister. It writes
+`.opencode\tests\test_out.txt` and finishes with a
+`RISULTATO passati=X falliti=Y totale=N` line. Run it from the project root:
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File .opencode\scripts\run_tests.ps1
+```
+
+It does **not** cover the UV pipeline: unwrap, seams, packing, texel density
+and the FBX/RizomUV round trip are not exercised by the suite.
 
 ---
 
@@ -705,3 +713,34 @@ computed thresholds, and where the pipeline would break. Output goes to the
 System Console and to a text block named `IntelligentUV_Diagnostic`.
 
 Use **Dry Run** to plan without writing anything to the mesh.
+
+---
+
+## License & attribution
+
+`intelligent_uv` is released under the **GNU General Public License, version 3 or
+later** (GPL-3.0-or-later). Copyright (C) 2026 Pierfrancesco Diodato.
+
+The full licence text is in [LICENSE](LICENSE).
+
+What comes from elsewhere, and what does not:
+
+- **Two development scripts** under `.opencode/skills/blender-bridge/scripts/`
+  (`blender_bridge.py`, `bridge_call.py`) are byte-for-byte identical to the
+  same-named files in the sibling `ACTD` project and are carried here under the
+  same GPL-3.0-or-later terms. They are tooling for agents working on this
+  repository, not part of the add-on: nothing in the package imports them, and
+  `.opencode/` is excluded from the release archive.
+- **RizomUVLink** (MIT, Rizom-Lab) is **not vendored**. No copy of it, no wheel
+  and no binary is in this repository. `rizomuv_link.py` imports it lazily from
+  the RizomUV installation on your machine, where the MIT notice travels with it;
+  it stays under Rizom-Lab's own MIT licence and is not covered by this project's
+  GPL-3.0-or-later. RizomUV itself is commercial software from Rizom-Lab and is
+  not distributed with this add-on.
+- Runtime dependencies are otherwise only what Blender ships: `bpy`, `bmesh`,
+  `mathutils` and `numpy` (bundled with Blender).
+
+[THIRD_PARTY.md](THIRD_PARTY.md) records the evidence behind each statement above
+— sizes, SHA-256 digests, usage paths — separates what the owner declares from
+what an inspection of this tree can verify, and names what the audit does not
+establish. It is a factual record, not a legal opinion.

@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.34.0 — Registration can run twice; author and licence recorded
+
+This is the baseline `bl_info` declares. Two limits apply to this entry, and
+both are deliberate:
+
+- There is **no 0.18.0 – 0.33.0 history in this file**; the repository begins
+  with a single import commit of 0.34.0. Nothing about that span is written here
+  because nothing about it can be read from the tree.
+- Work that `README.md` describes for this version without a test or a log
+  behind it — the island-grouping and post-unwrap timings, the nested-island
+  containment fix, the Otsu crease-threshold fix — is recorded in `ROADMAP.md`
+  section 2 as **reported, not reproduced**. It is not repeated here as a
+  released change until Phase 1 reproduces or refutes it.
+
+**Fixed**
+
+- `register()` is now callable more than once in the same session. The guard
+  looked for registered classes under `cls.__name__`, but operators are
+  registered under `bl_idname`, so the second call failed part-way and left the
+  scene without `Scene.intelligent_uv_settings`. The module now records what it
+  registered (`_registered_classes`), removes that list before registering
+  again, looks each class up under the name Blender actually uses
+  (`_registered_name`) and detaches the Scene pointer before the
+  `PropertyGroup` behind it is replaced. Scene settings are snapshotted before
+  the pointer is dropped and written back after it is re-attached.
+
+**Changed**
+
+- `bl_info["author"]` is `Pierfrancesco Diodato` instead of the placeholder
+  `"Your Name"`.
+- Distribution terms are recorded instead of assumed: `LICENSE` states
+  GPL-3.0-or-later, `THIRD_PARTY.md` inventories what comes from elsewhere (two
+  development scripts carried over from the sibling ACTD project, and
+  `RizomUVLink`, MIT and **not vendored**), and `README.md` carries a *License &
+  attribution* section pointing at both. The licence states the terms of
+  distribution; it is not proof of title over every line, and `THIRD_PARTY.md`
+  says so itself.
+
+**Verification**
+
+- Smoke suite `.opencode/tests/smoke_test.py`, run through
+  `.opencode/scripts/run_tests.ps1`: **14 checks, 14 passed, 0 failed** on
+  Blender 5.2.0 LTS (hash `fbe6228777e7`, built 2026-07-14). The run includes
+  the `doppio_register` and `re-register` checks that cover the fix above.
+- Scope of that suite: compilation, import, `bl_info`, registration and
+  re-registration, the Scene pointer, class/operator/property counts, the panel
+  and unregister. It does **not** exercise the UV pipeline.
+
 ## 0.17.2 — Nothing ever lands outside the 0-1 tile
 
 **Fixed**
