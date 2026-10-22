@@ -21,6 +21,9 @@ dist/
 .opencode/probe/*.png
 *.log
 
+# Esperimenti locali (non pubblicati)
+_esperimenti/
+
 # Note locali non pubblicate
 AGENTS.md
 opencode.json
