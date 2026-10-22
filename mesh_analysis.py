@@ -643,14 +643,24 @@ class MeshAnalyzer:
 
         if len(result.face_centers) != result.face_count:
             centers = [(0.0, 0.0, 0.0)] * result.face_count
-            try:
-                for idx, poly in enumerate(polygons):
-                    center = getattr(poly, "center", None)
-                    if center is not None and hasattr(center, "__iter__"):
-                        centers[idx] = tuple(float(x) for x in center)
-            except (AttributeError, TypeError) as exc:
+            missing_centers = 0
+            for idx, poly in enumerate(polygons):
+                center = getattr(poly, "center", None)
+                # Read by index inside a try: `mathutils.Vector` does not
+                # answer hasattr("__iter__") on every Blender build (5.2
+                # reports none), and that guard used to leave every centre
+                # at its default without a word.
+                try:
+                    centers[idx] = (
+                        float(center[0]), float(center[1]), float(center[2])
+                    )
+                except (AttributeError, TypeError, IndexError, ValueError):
+                    missing_centers += 1
+            if missing_centers:
                 result.warnings.append(
-                    f"Face centres unavailable ({exc}): seams cannot prefer concave edges."
+                    f"Face centres unavailable for {missing_centers} of "
+                    f"{result.face_count} faces: seams cannot prefer concave "
+                    "edges on them."
                 )
             result.face_centers = centers
 
@@ -775,6 +785,8 @@ class MeshAnalyzer:
         result.face_centers = [(0.0, 0.0, 0.0)] * result.face_count
 
         total_area = 0.0
+        missing_normals = 0
+        missing_centers = 0
 
         for idx, poly in enumerate(polygons):
             try:
@@ -782,21 +794,45 @@ class MeshAnalyzer:
             except Exception:
                 area = 0.0
 
+            # Read by index inside a try rather than behind an
+            # hasattr("__iter__") guard: a mathutils.Vector does not report
+            # __iter__ on every Blender build, and the guard silently kept
+            # the defaults.
             normal = getattr(poly, "normal", None)
-            if normal is not None and hasattr(normal, "__iter__"):
-                normal_tuple = tuple(float(x) for x in normal)
-            else:
+            try:
+                normal_tuple = (
+                    float(normal[0]), float(normal[1]), float(normal[2])
+                )
+            except (AttributeError, TypeError, IndexError, ValueError):
                 normal_tuple = (0.0, 1.0, 0.0)
+                missing_normals += 1
 
             center = getattr(poly, "center", None)
-            if center is not None and hasattr(center, "__iter__"):
-                result.face_centers[idx] = tuple(float(x) for x in center)
+            try:
+                result.face_centers[idx] = (
+                    float(center[0]), float(center[1]), float(center[2])
+                )
+            except (AttributeError, TypeError, IndexError, ValueError):
+                missing_centers += 1
 
             result.face_areas[idx] = area
             result.face_normals[idx] = normal_tuple
             total_area += area
 
         result.total_area = total_area
+
+        if missing_normals:
+            result.warnings.append(
+                f"Face normals unavailable for {missing_normals} of "
+                f"{result.face_count} faces; the default (0, 1, 0) was used."
+            )
+
+        if missing_centers:
+            result.warnings.append(
+                f"Face centres unavailable for {missing_centers} of "
+                f"{result.face_count} faces: seams cannot prefer concave "
+                "edges on them."
+            )
 
         result.edge_lengths = []
         for edge in edges:
