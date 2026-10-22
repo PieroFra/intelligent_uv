@@ -16,6 +16,63 @@ under the **Intelligent UV** tab.
 
 ---
 
+## Quick start
+
+Select a mesh object, press **N** in the 3D View and open the **Intelligent UV**
+tab. The whole workflow is in that panel:
+
+1. **Check Mesh** — reads the mesh and reports what would spoil the unwrap,
+   each finding with what to do about it. It changes nothing, so it is safe to
+   run first and safe to run again.
+2. **Unwrap** — runs the full pipeline (`Run Intelligent UV`): preflight, seam
+   planning, unwrap, packing and the quality report. **Preview** runs the same
+   pipeline but keeps the result pending until you press **Apply** or
+   **Discard**.
+3. *Only when the packing happens in RizomUV:* **Export & Open** asks where to
+   write the FBX (default `<object>_uv.fbx`), unwraps natively first so the
+   planned seams travel inside the file as island borders, then launches
+   RizomUV on it. Work there and save over that file, or beside it as
+   `<name>_import.fbx`.
+4. **Import** copies the UVs back from whichever of those two files is newer,
+   with no dialog. **Import from...** opens a file browser when the result lives
+   somewhere else.
+
+The default view holds nine controls: the preset menu, **Unwrap**, **Preview**,
+**Check Mesh**, **Dry Run**, **Resolution**, **Target Islands** (with **Detail**
+below it), **All Selected Objects**, and the **External Editor** group — path,
+**Export & Open**, **Import**, **Import from...**. Everything else sits behind
+**Advanced** at the bottom of the panel; the defaults and the presets are meant
+to cover most assets, and those parameters are there for the assets they do not.
+
+---
+
+## Known limitations
+
+- **Reinstalling the add-on requires restarting Blender.** The settings live in
+  a `PropertyGroup` that `Scene.intelligent_uv_settings` points at; reloading
+  the modules would leave that RNA pointer dangling, which crashes Blender
+  instead of raising, so no automatic reload exists. `register()` says so when
+  it detects a stale load.
+- **RizomUV is optional and the live link is Windows-only.** Rizom-Lab's
+  library ships as a Windows wheel, so macOS and Linux fall back to the manual
+  round trip. The automated engine — the experimental toggle behind
+  **Advanced** — has never completed a round trip reliably; **Export & Open**
+  followed by **Import** is the supported flow.
+- **The test suite does not cover the UV pipeline.** `.opencode/tests/smoke_test.py`
+  runs 14 checks over import, registration, the panel, the operators, the
+  properties exposed in the UI and unregister. None of them unwraps a mesh,
+  marks a seam, packs a layout or exercises the FBX/RizomUV round trip: a green
+  run says the add-on registers, not that the result is good.
+- **Only Blender 5.2.0 LTS is covered by the logs here.** 4.2.0 is the minimum
+  declared in `bl_info` and the code carries fallbacks for the differences
+  between the two, but that version has not been exercised.
+- **Numbers quoted in this document are development measurements.** Timings and
+  island counts in the notes below come from runs on specific meshes while the
+  features were written; the test suite does not reproduce them, so read them
+  as reports rather than as guarantees.
+
+---
+
 ## Pipeline
 
 ```
