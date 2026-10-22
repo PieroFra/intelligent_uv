@@ -294,11 +294,48 @@ same requirements.
 5. If it is not adopted, record that decision with its reason, so the question is
    not reopened by guesswork.
 
+**Outcome (2026-10-22)**
+
+The research in step 1 was executed and recorded in
+`.opencode/notes/manifest_research_2026-10-22.md` — access date **2026-10-22**,
+nine manual pages (`gs42`/`gs52`, `addons42`/`addons52`, `lic42`/`lic52`,
+`pref42`/`pref52`, `prefext52`). The note is internal and non-gate: its
+"Documented facts" section is quoted from those pages, its "Recommendation"
+section is our own judgement, not a documented requirement.
+
+Answers as recorded in that note:
+
+| Question | Answer in the accessed documentation |
+|---|---|
+| Is a `blender_manifest.toml` required for a ZIP installed from Preferences? | **No, on the legacy path.** *Install from Disk* also installs legacy add-ons (`.py` or `.zip`) and does not auto-enable them. The manifest is mandatory only for the **extension** format, shared as a `.zip` containing a manifest plus `__init__.py` |
+| Mandatory manifest fields | `schema_version` (`1.0.0`), `id`, `version`, `name`, `tagline`, `maintainer`, `type` (`add-on`), `license` (SPDX expression list), `blender_version_min` |
+| What the licence field accepts | SPDX expressions; for add-ons the required licence is **GPL-3.0-or-later**, written `license = ["SPDX:GPL-3.0-or-later"]` — confirmed in both 4.2 and 5.2 |
+| Are platform tags needed for a pure-Python add-on? | **No, they are optional.** Omit `platforms` and the extension is offered on all operating systems; declared values are `windows-x64`, `windows-arm64`, `macos-x64`, `macos-arm64`, `linux-x64` |
+| `tagline` ≤ 64 characters | **Not verified** — the limit was not found in the accessed pages. It is not a fact here and must not be stated publicly without a source |
+| What changes between 4.2 and 5.2 | Same required fields, same default `[build] paths_exclude_pattern`, no documented difference on `maintainer`. The pages do differ on an unrelated API spelling: `bpy.app.online_access_overriden` (4.2) vs `bpy.app.online_access_override` (5.2) |
+
+**Decision (2026-10-22) — legacy ZIP, no manifest.** The first release is a
+**GitHub release that ships the legacy ZIP without `blender_manifest.toml`.**
+Reasons: the documented Preferences install path does not require the manifest
+for a legacy add-on; `bl_info` already carries version, author and minimum
+Blender; a second metadata source added before it is needed is exactly the drift
+step 4 warns about. `blender_manifest.toml` is therefore **deferred to a possible
+publication on Blender Extensions**, and would be created only with its own
+research/creation pass, keeping `version`, author and minimum Blender aligned
+with `bl_info`. `bl_info` is **not** removed while the legacy format ships; the
+conversion guide's "remove the `bl_info` information" step applies only to a real
+conversion.
+
 **Done when**
 
-- A dated note states what the current documentation requires, with sources.
-- The manifest decision is recorded, and any manifest created agrees with
-  `bl_info` on version, author and minimum Blender.
+- [x] A dated note states what the current documentation requires, with sources
+  — `.opencode/notes/manifest_research_2026-10-22.md`, access date 2026-10-22.
+- [x] The manifest decision is recorded, with its reason — legacy ZIP without
+  manifest; the manifest is deferred to a possible Extensions publication.
+- [ ] Any manifest created agrees with `bl_info` on version, author and minimum
+  Blender — **not applicable yet**: no manifest exists. It becomes a requirement
+  only if and when `blender_manifest.toml` is created; the note records that
+  alignment as our recommendation, not a documented rule.
 
 ---
 
