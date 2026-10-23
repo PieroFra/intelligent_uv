@@ -751,28 +751,29 @@ Constraints that stay in force for F1–F4:
 - None of these features may be used to justify a release number bump before the
   gate that exercises it exists.
 
-### 8.3 Validation — formal G2 and G3 in an interactive desktop session
+### 8.3 Validation — G2 and G3 closed in an interactive desktop session
 
-The two open gates are closed only by a human on a desk, not by a headless run.
-This sub-item restates that requirement so it is not lost among the features
-above.
+These two gates are closed only by a human on a desk, not by a headless run.
+Both were closed that way on 2026-10-23; the verdicts and the dated evidence
+are registered in §3 and §3.1.
 
-- **G2 — RizomUV manual round trip.** Install the ZIP, restart Blender, launch
-  RizomUV from the export path, unwrap and save there, then Import UV from FBX /
-  Import Last. Record RizomUV version, export and import paths, object and layer
-  name, and match/failure counts. The existing headless G2-style run simulated
-  the external edit inside Blender, so it does not close this gate.
-- **G3 — clean install lifecycle.** Fresh configuration, install ZIP, restart,
-  enable, Check Mesh, disable, re-enable, restart, enable, remove — console read
-  at every step on both target versions. The G3-style headless run failed at
-  step 5 with an `AttributeError` on `_RestrictData`; the cause was fixed in
-  `e91cf4d`, but no dated lifecycle log exists after that fix, so G3 remains
-  open.
-- Both gates need a dated log kept with the release; a passing UI is not
-  evidence if the console shows a traceback.
-- Until both are closed, the public wording stays "manual, interactive,
-  unverified headless" for RizomUV and "tested on the logged Blender builds
-  only" for the add-on.
+- **G2 — RizomUV manual round trip: PASS — 2026-10-23 — RizomUV 2025.0.117 —
+  match 500/500.** Suzanne desktop round trip: Export & Open → unfold and pack
+  in RizomUV 2025.0.117.g4c8bab02 → save → Import UV from FBX; layer
+  `SmartUV`, 500/500 faces matched, 1968 loops written, 0 unmatched, backup
+  layer `SmartUV_backup` created.
+- **G3 — clean install lifecycle: PASS — 2026-10-23 — Blender 5.2.0 LTS
+  (fbe6228777e7) — ZIP sha256 df81d098...93a1.** Fresh configuration, ZIP
+  install, restart, enable, Check Mesh clean, disable, re-enable, restart,
+  enable, remove — console clean at every step. Blender 4.2 LTS branch:
+  **NOT EXECUTED** (4.2 LTS absent on this machine) and stays open.
+- The dated logs stay with the release; a passing UI is not evidence if the
+  console shows a traceback.
+- What remains open is G1 and the Blender 4.2 LTS branch of G3. The public
+  wording stays "manual, interactive, unverified headless" for the automated
+  RizomUV engine (still behind the experimental toggle) and "tested on the
+  logged Blender builds only" for the add-on: the PASS verdicts cover the
+  manual flow on the named builds, not the headless suites.
 
 ---
 
@@ -784,8 +785,12 @@ Publication Plan*: the GitHub-ready publication inputs with their current state
 interactive RizomUV live bridge, seam pinning in Edit Mode, multi-object batch
 unwrapping with global texel density) each with the question to settle before
 implementation, and the restatement that G2 and G3 require an interactive
-desktop session. It is a plan: it certifies no gate and schedules nothing, and
-it does not lift the section 6 non-goal for the 0.34.0 baseline.
+desktop session. That requirement was met on 2026-10-23: both gates closed
+with PASS verdicts registered in §3.1 and restated in §8.3 (G2: RizomUV
+2025.0.117, match 500/500; G3: Blender 5.2.0 LTS, ZIP sha256 df81d098...93a1 —
+the Blender 4.2 LTS branch of G3 was not executed). It is a plan: the feature
+items certify no gate and schedule nothing, and it does not lift the section 6
+non-goal for the 0.34.0 baseline.
 
 **This revision** restructured the document around three evidence classes and
 reordered the phases so the manual release gate comes first. It added: the

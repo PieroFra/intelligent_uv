@@ -77,6 +77,20 @@ both are deliberate:
   G2 needs an interactive desktop session with RizomUV. The evidence and the
   remaining work are listed in `ROADMAP.md` §3.1.
 
+**Formal gate closure**
+
+- **G2 PASS — 2026-10-23 — RizomUV 2025.0.117 — match 500/500.** Manual round
+  trip on Suzanne (Blender GUI + RizomUV): Export & Open, unfold and pack in
+  RizomUV, save, Import UV from FBX — layer `SmartUV`, 500/500 faces matched,
+  1968 loops written, 0 unmatched, backup layer `SmartUV_backup` created.
+  Class (c) verdict, registered in `ROADMAP.md` §3/§3.1.
+- **G3 PASS — 2026-10-23 — Blender 5.2.0 LTS (fbe6228777e7) — ZIP sha256
+  df81d098...93a1.** Clean install lifecycle on a fresh configuration: install,
+  restart, enable (Intelligent UV panel populated, Check Mesh clean), disable,
+  re-enable, restart, enable, remove — no traceback at any step. Blender 4.2
+  LTS branch: NOT EXECUTED (4.2 LTS absent on this machine). Class (c) verdict,
+  registered in `ROADMAP.md` §3/§3.1.
+
 ## 0.17.2 — Nothing ever lands outside the 0-1 tile
 
 **Fixed**
