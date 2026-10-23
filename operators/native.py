@@ -262,12 +262,37 @@ class NativePipelineMixin:
         return True
 
     def _analyze_islands(self, state, native):
+        # Region ids are per-face and survive the RizomUV round trip, so the
+        # planner partition is a valid hint regardless of the native flag. The
+        # parameter is kept for signature stability.
+        obj = state["obj"]
+        face_count = len(obj.data.polygons)
+        region_ids = None
+        try:
+            plan = state.get("seam_plan")
+            candidate = getattr(plan, "region_ids", None)
+            if candidate is not None and len(candidate) == face_count:
+                region_ids = candidate
+            else:
+                planned = len(candidate) if candidate is not None else 0
+                self._report(
+                    "WARNING",
+                    f"{obj.name}: unusable region ids ({face_count} faces vs "
+                    f"{planned} ids), falling back to mesh components.",
+                )
+        except Exception as exc:
+            self._report(
+                "WARNING",
+                f"{obj.name}: region ids unavailable ({exc}), "
+                "falling back to mesh components.",
+            )
+
         try:
             island_analysis = IslandExtractor.analyze(
-                obj=state["obj"],
+                obj=obj,
                 settings=state["settings"],
                 material_analysis=state["material_analysis"],
-                region_ids=state["seam_plan"].region_ids if native else None,
+                region_ids=region_ids,
             )
         except Exception as exc:
             self._report("WARNING", f"UV island analysis failed: {exc}")
