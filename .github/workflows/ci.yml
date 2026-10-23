@@ -180,7 +180,7 @@ jobs:
           if ($py -ne [int]$env:EXPECTED_PY) { throw "Expected $env:EXPECTED_PY .py files, got $py" }
           if ($docs -ne [int]$env:EXPECTED_DOCS) { throw "Expected $env:EXPECTED_DOCS docs, got $docs" }
           if ($files -ne ($py + $docs)) { throw "Inconsistent file count: $files != $py + $docs" }
-          Write-Host "Version $version: file=$files py=$py docs=$docs"
+          Write-Host "Version ${version}: file=$files py=$py docs=$docs"
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Verify archive contents and checksum
@@ -214,7 +214,7 @@ jobs:
           $docs = @($entries | Where-Object {
               ($_ -match '^intelligent_uv/[^/]+$') -and ($_ -notlike '*.py')
             }).Count
-          Write-Host "ZIP $version: file=$($entries.Count) py=$py docs=$docs sha256=$actual"
+          Write-Host "ZIP ${version}: file=$($entries.Count) py=$py docs=$docs sha256=$actual"
           if ($py -ne [int]$env:EXPECTED_PY) { throw "ZIP: expected $env:EXPECTED_PY .py files, got $py" }
           if ($docs -ne [int]$env:EXPECTED_DOCS) { throw "ZIP: expected $env:EXPECTED_DOCS docs, got $docs" }
 
