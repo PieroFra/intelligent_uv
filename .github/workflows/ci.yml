@@ -1,0 +1,238 @@
+name: CI
+
+# Headless CI for Intelligent UV Mapping.
+#
+# The add-on is a flat Python package: there is no build step. The test jobs
+# download the official Blender builds (LTS 4.2 and 5.2 lines) and run the two
+# headless suites that live in .opencode/tests/. The package job runs the release
+# script and checks that the ZIP honours the packaging criteria.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Packaging contract: 41 modules (*.py) plus 4 user docs ship in the ZIP.
+  EXPECTED_PY: "41"
+  EXPECTED_DOCS: "4"
+
+jobs:
+  blender-tests:
+    name: Blender ${{ matrix.blender }} | ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        blender: ["4.2.23", "5.2.3"]
+    defaults:
+      run:
+        # The suites derive the package name from the checkout folder name, so
+        # the repository is checked out as intelligent_uv/ regardless of its URL.
+        working-directory: intelligent_uv
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: intelligent_uv
+
+      - name: Install Blender runtime libraries
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libx11-6 libxi6 libxxf86vm1 libxfixes3 libxrender1 \
+            libxkbcommon0 libgl1 libsm6 libxrandr2 libegl1 libgomp1
+
+      - name: Restore Blender archive cache
+        id: blender-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/blender/${{ matrix.blender }}
+          key: blender-${{ matrix.blender }}-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Download Blender ${{ matrix.blender }}
+        if: steps.blender-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $version = '${{ matrix.blender }}'
+          $series = (($version -split '\.')[0, 1] -join '.')
+          $platform = if ($IsWindows) { 'windows-x64' } else { 'linux-x64' }
+          $extension = if ($IsWindows) { 'zip' } else { 'tar.xz' }
+          $archive = "blender-$version-$platform.$extension"
+          $url = "https://download.blender.org/release/Blender$series/$archive"
+          $dest = Join-Path $env:RUNNER_TEMP "blender/$version"
+          $downloads = Join-Path $env:RUNNER_TEMP 'blender/_downloads'
+          New-Item -ItemType Directory -Force -Path $dest, $downloads | Out-Null
+          Write-Host "Download $url"
+          $file = Join-Path $downloads $archive
+          Invoke-WebRequest -Uri $url -OutFile $file
+          tar -xf $file -C $dest
+          if ($LASTEXITCODE -ne 0) { throw "Extraction failed: $archive" }
+          Remove-Item -LiteralPath $file -Force
+
+      - name: Locate Blender
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP "blender/${{ matrix.blender }}"
+          $exe = Get-ChildItem -LiteralPath $root -Recurse -File |
+            Where-Object { $_.Name -in @('blender.exe', 'blender') } |
+            Select-Object -First 1
+          if (-not $exe) { throw "Blender binary not found under $root" }
+          & $exe.FullName --version 2>&1 | Select-Object -First 2 | ForEach-Object { Write-Host $_ }
+          Write-Host "BLENDER_BIN=$($exe.FullName)"
+          "BLENDER_BIN=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Run headless test suites
+        shell: pwsh
+        run: |
+          # Blender writes to stderr even on success: do not turn that into a
+          # terminating error. The suites print RISULTATO ... and exit 0 even
+          # when a check fails, so the verdict is parsed from the log.
+          $ErrorActionPreference = 'Continue'
+          New-Item -ItemType Directory -Force -Path 'ci-logs' | Out-Null
+          $failed = New-Object System.Collections.Generic.List[string]
+          foreach ($suite in @('smoke_test', 'pipeline_test')) {
+            $log = "ci-logs/blender-${{ matrix.blender }}-${{ runner.os }}-$suite.log"
+            Write-Host "::group::$suite on Blender ${{ matrix.blender }}"
+            $lines = & $env:BLENDER_BIN --factory-startup --background --python ".opencode/tests/$suite.py" 2>&1 |
+              ForEach-Object { $_.ToString() }
+            $code = $LASTEXITCODE
+            $lines | Set-Content -LiteralPath $log -Encoding utf8
+            $lines | ForEach-Object { Write-Host $_ }
+            Write-Host '::endgroup::'
+
+            $result = $lines | Where-Object { $_ -match '^RISULTATO ' } | Select-Object -Last 1
+            if ($code -ne 0) {
+              $failed.Add("$suite (exit=$code)")
+            }
+            elseif (-not $result) {
+              $failed.Add("$suite (RISULTATO missing)")
+            }
+            elseif ($result -notmatch 'falliti=0') {
+              $failed.Add("$suite ($result)")
+            }
+            else {
+              Write-Host "SUITE $suite -> $result"
+            }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Host "::error::Failing suites: $($failed -join '; ')"
+            exit 1
+          }
+          Write-Host 'All suites passed: falliti=0'
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-blender-${{ matrix.blender }}-${{ runner.os }}
+          path: intelligent_uv/ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+  package:
+    name: Package release
+    runs-on: windows-latest
+    needs: blender-tests
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: intelligent_uv
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: intelligent_uv
+
+      - name: Build release archive
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $lines = & ./.opencode/scripts/package_release.ps1 -OutputDir dist 2>&1 |
+            ForEach-Object { $_.ToString() }
+          $code = $LASTEXITCODE
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($code -ne 0) { throw "package_release.ps1 exited with $code" }
+
+          $report = $lines | Where-Object { $_ -match '^PACKAGE ' } | Select-Object -Last 1
+          if (-not $report) { throw 'PACKAGE line missing: packaging did not complete.' }
+          $pattern = '^PACKAGE versione=(?<version>\S+) file=(?<files>\d+) py=(?<py>\d+) docs=(?<docs>\d+)$'
+          if ($report -notmatch $pattern) { throw "Unexpected PACKAGE line: $report" }
+          $version = $Matches['version']
+          $py = [int]$Matches['py']
+          $docs = [int]$Matches['docs']
+          $files = [int]$Matches['files']
+          if ($py -ne [int]$env:EXPECTED_PY) { throw "Expected $env:EXPECTED_PY .py files, got $py" }
+          if ($docs -ne [int]$env:EXPECTED_DOCS) { throw "Expected $env:EXPECTED_DOCS docs, got $docs" }
+          if ($files -ne ($py + $docs)) { throw "Inconsistent file count: $files != $py + $docs" }
+          Write-Host "Version $version: file=$files py=$py docs=$docs"
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Verify archive contents and checksum
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = $env:VERSION
+          $zip = "dist/intelligent_uv-$version.zip"
+          $checksum = "dist/intelligent_uv-$version.sha256"
+          foreach ($path in @($zip, $checksum)) {
+            if (-not (Test-Path -LiteralPath $path)) { throw "Missing artifact: $path" }
+          }
+
+          $expected = ((Get-Content -LiteralPath $checksum -Raw).Trim() -split '\s+')[0]
+          $actual = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expected -ne $actual) { throw "SHA-256 mismatch: $expected != $actual" }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $zip).Path)
+          try { $entries = @($archive.Entries | ForEach-Object { $_.FullName }) }
+          finally { $archive.Dispose() }
+
+          $leaks = @($entries | Where-Object {
+              $_ -notmatch '^intelligent_uv/' -or
+              $_ -match '^intelligent_uv/(\.opencode|\.git|\.github|__pycache__|_esperimenti|dist)/' -or
+              $_ -match '\.(pyc|pyo|log|txt|ps1|zip)$'
+            })
+          if ($leaks.Count -gt 0) { throw ('Development files inside the ZIP: ' + ($leaks -join ', ')) }
+
+          $py = @($entries | Where-Object { $_ -like '*.py' }).Count
+          $docs = @($entries | Where-Object {
+              ($_ -match '^intelligent_uv/[^/]+$') -and ($_ -notlike '*.py')
+            }).Count
+          Write-Host "ZIP $version: file=$($entries.Count) py=$py docs=$docs sha256=$actual"
+          if ($py -ne [int]$env:EXPECTED_PY) { throw "ZIP: expected $env:EXPECTED_PY .py files, got $py" }
+          if ($docs -ne [int]$env:EXPECTED_DOCS) { throw "ZIP: expected $env:EXPECTED_DOCS docs, got $docs" }
+
+          @(
+            '### Release archive',
+            '',
+            "- version: ``$version``",
+            "- files: $($entries.Count) (py $py, docs $docs)",
+            "- sha256: ``$actual``"
+          ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligent_uv-release
+          path: |
+            intelligent_uv/dist/*.zip
+            intelligent_uv/dist/*.sha256
+            intelligent_uv/dist/*.files.txt
+          if-no-files-found: error
+          retention-days: 30
