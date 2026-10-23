@@ -70,8 +70,9 @@ Everything below is read from the repository, not from earlier plans.
 | Author | `bl_info["author"]` is still `"Your Name"` | `__init__.py` |
 | Size | **41** Python files (**31** root modules + **10** in `operators/`), **11,715** lines | file count |
 | Smoke test | **14 passed, 0 failed, 14 total** on Blender **5.2.0 LTS**, build hash `fbe6228777e7`, built 2026-07-14; asserts 17 classes, 14 operators, 65 properties | `.opencode/tests/test_out.txt` |
-| Register risk | The log includes passing `doppio_register` and `re-register` checks; the guard tracks what it registered and snapshots scene settings | smoke log, `__init__.py` |
-| Smoke scope | Registration, panel, operators, properties, unregister. The test file states it does **not** touch the UV pipeline | `.opencode/tests/smoke_test.py` |
+| Pipeline test | **7 passed, 0 failed, 7 total** on the same build: three negative paths (no active object, non-mesh object, empty mesh) and the native pipeline on cube, cylinder and sphere, with UV range/density/angle checks | `.opencode/tests/pipeline_out.txt` |
+| Register risk | The log includes passing `doppio_register` and `re-register` checks; the guard tracks what it registered and snapshots scene settings. `register()` now reads scenes through `getattr` so it survives Blender's `RestrictBlend` sandbox | smoke log, `__init__.py` |
+| Test scope | The smoke test covers registration, panel, operators, properties and unregister; the pipeline test covers the native pipeline on **primitives only**. Neither runs on the gate asset, and neither executes the external/RizomUV path | `smoke_test.py`, `pipeline_test.py` |
 | Repository | Branch `main`, one commit (`e357426 import iniziale Intelligent UV Mapping 0.34.0`), **no remote configured** | `git log`, `git remote` |
 | Working tree | `README.md`, `ROADMAP.md`, `__init__.py` and the smoke test are modified but uncommitted; the two UI-probe scripts, `LICENSE` and `THIRD_PARTY.md` are untracked | `git status` |
 | Distribution files | `LICENSE` (GPL-3.0-or-later) and `THIRD_PARTY.md` exist but are **not committed**; no `.github/`, no `blender_manifest.toml`, no packaging script | directory listing, `git status` |
@@ -87,9 +88,10 @@ What this means:
 
 - The double-`register()` risk is **closed by both code and test**; it is no
   longer a release blocker.
-- The UV pipeline is **unverified by the automated suite**. A passing 14/14 says
-  nothing about unwrap, seams, packing or density — and nothing at all about the
-  timings in section 2.
+- The UV pipeline is now **covered on primitives** by the 7-check pipeline suite,
+  but still **unverified on a real asset**: a passing smoke 14/14 and pipeline
+  7/7 says nothing about the gate asset, seams, packing or density under
+  production conditions — and nothing at all about the timings in section 2.
 - The public documentation still states performance figures whose measurement
   nobody can rerun; they stay class (b) until a timed run is recorded.
 - The licence is chosen and written, but **not committed**; choosing it records
@@ -170,6 +172,52 @@ their numbers may be cited as a gate result.
 - It is blocking because it is the only check that exercises the product path
   (Check Mesh → Unwrap) on a real asset, and the automated suite does not.
 
+### 3.1 Recorded so far — automated runs and non-gate headless support
+
+Everything in this table exists as a file in the tree. None of it closes a gate:
+the automated suites are class (a) structural evidence, and the two headless runs
+are **class non-gate** by the rule above. Class (c) stays open.
+
+| Evidence | Result as recorded | Artifact | Class |
+|---|---|---|---|
+| Smoke suite | **14/14**, 0 failed — Blender 5.2.0 LTS, build `fbe6228777e7` (2026-07-14) | `.opencode/tests/test_out.txt` | (a) |
+| Pipeline suite | **7/7**, 0 failed — same build; 3 negative paths + native pipeline on cube/cylinder/sphere | `.opencode/tests/pipeline_out.txt` | (a) |
+| G1-style headless run | 2026-10-23, 19,985 faces (target matched), Check Mesh **0 blocking / 1 warning / 1 note**, Unwrap `FINISHED` twice at **2.70 s** and **2.58 s**, 0 loops outside the 0–1 tile, 0 collapsed UV faces | `_esperimenti/gates/g1_run/report.md`, `metrics.json`, `console.log` | non-gate |
+| G3-style headless run | 2026-10-23, **FAIL at step 5 (Enable)**: `AttributeError: '_RestrictData' object has no attribute 'scenes'`, ZIP sha256 `5860c473…` | `_esperimenti/gates/g3_run/g3_report.md`, `g3_log.txt` | non-gate |
+| G2-style headless run | 2026-10-23, export `FINISHED` (15,788 B FBX), RizomUV live link failed (link port 49152 not opened within 180 s), external edit **simulated inside Blender**, import `FINISHED` with 6/6 faces and 24 loops matched on layer `SmartUV`, 0 unmatched | `_esperimenti/gates/g2_run/runs/20261023-181059/log.txt`, `results.json` | non-gate |
+
+What the G1-style run does and does not support: the measurements are consistent
+with the expectations (no blocking check, no out-of-tile loops, no traceback,
+small run-to-run variance), but the report itself states the verdict line cannot
+be filled, because the add-on was registered in-process from source rather than
+installed from the ZIP on a virgin configuration, with no restart and no
+interactive session. It is supporting evidence for the manual procedure, not a
+G1 result. Its 15.8% UV coverage is an artifact of `--background` (packing
+operators fail `poll()` there) and must not be quoted as a quality figure.
+
+What the G3-style run changed: the failure was traced to `register()` reading
+`bpy.data.scenes` inside Blender 5.2's `RestrictBlend` sandbox, and fixed in
+commit `e91cf4d` by guarding the collection access. The supplementary probe
+scripts `50`–`53` in the same folder exercise enable, panel, Check Mesh and
+disable/re-enable after that fix, but **their console output was not captured**,
+so no dated lifecycle log exists after the fix. G3 therefore has no passing
+record: it is open pending a full re-run of the lifecycle on the patched ZIP.
+Blender 4.2 LTS was not executed at all (not installed on the gate machine).
+
+Consequence for this roadmap: the headless runs recorded above are allowed to
+inform the procedure, the checklist wording and where to look; they are **not**
+citable as gate results and none of their numbers may appear in the README or
+release notes.
+
+What the G2-style run does and does not support: it exercises export, import and
+Import Last against a real RizomUV 2025.0 install, but the live link never
+reached RizomUV (port 49152 not opened within 180 s), so the external editing
+step was **simulated inside Blender**. The 6/6 face and 24-loop match therefore
+proves the import path, not a RizomUV round trip. G2 stays open pending an
+interactive desktop session: launch RizomUV, unwrap and save there, import back.
+The earlier Lua-script draft run in the same folder meanwhile confirms the
+documented `-cfi` path does not terminate (240 s timeout, empty log).
+
 ---
 
 ## 4. Phases, in priority order
@@ -180,9 +228,10 @@ publish a quality claim before G1 passes.
 
 ### Phase 1 — Release gate on the CC0 rifle asset (blocking)
 
-**Why:** the product is the unwrap, not the registration. No automated test in
-this repository runs the pipeline on a real asset, and every performance figure
-currently published is class (b). The accepted gate asset is the CC0 Poly Haven
+**Why:** the product is the unwrap, not the registration. The automated suites
+run the pipeline only on primitives; nothing runs it on the gate asset, and every
+performance figure currently published is class (b). The accepted gate asset is
+the CC0 Poly Haven
 model **`bolt_action_rifle_7_62`**, expected to report **19,985 faces** — a
 number the run confirms, not one assumed here; the production rifle the gate was
 first written for no longer exists.
@@ -521,9 +570,14 @@ used to claim quality before the gate passes.
    marking → native unwrap → island extraction → texel density → distortion, and
    assert invariants: no zero-area islands, all UV loops inside the 0–1 tile, no
    reported overlaps, seam read-back matches the plan.
+   **Recorded:** `.opencode/tests/pipeline_test.py`, 7 checks, 7/7 on 5.2.0 LTS
+   (`.opencode/tests/pipeline_out.txt`). Still open: the same invariants on the
+   gate asset, and coverage of the external path.
 2. **Negative paths.** No active object, non-mesh object, Edit Mode, missing UV
    layer, degenerate mesh. Each must fail with a reported reason, not a crash or
    a silent success.
+   **Recorded:** the first three are in the 7/7 pipeline suite. Edit Mode,
+   missing UV layer and degenerate mesh are **not yet covered**.
 3. **Version matrix.** Run the suite on 4.2 LTS and 5.2 LTS. The runner defaults
    to a hard-coded 5.2 path, so the executable must be passed explicitly
    elsewhere.

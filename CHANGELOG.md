@@ -63,11 +63,19 @@ both are deliberate:
   Blender 5.2.0 LTS (hash `fbe6228777e7`, built 2026-07-14), unchanged by the
   fixes in this entry. The `doppio_register` and `re-register` checks are the
   ones that exercise the registration fix.
-- Scope of that suite: compilation, import, `bl_info`, registration and
-  re-registration, the Scene pointer, class/operator/property counts, the panel
-  and unregister. It does **not** exercise the UV pipeline, so the portable
-  face reads and the region-level overlap check are recorded as code changes
-  without automated coverage here.
+- Pipeline suite `.opencode/tests/pipeline_test.py`, same runner and build:
+  **7 checks, 7 passed, 0 failed** — three negative paths (no active object,
+  non-mesh object, empty mesh) plus the native pipeline on cube, cylinder and
+  sphere, with UV-range, density and angle assertions.
+- Scope of the two suites: the smoke suite covers compilation, import,
+  `bl_info`, registration and re-registration, the Scene pointer,
+  class/operator/property counts, the panel and unregister; the pipeline suite
+  covers the native pipeline on primitives only. Neither executes the
+  external/RizomUV path, and neither runs on the gate asset.
+- Release gates are **not** closed by these suites. G1 and G3 have dated
+  headless exploratory runs (2026-10-23) that are non-gate by the project rule;
+  G2 needs an interactive desktop session with RizomUV. The evidence and the
+  remaining work are listed in `ROADMAP.md` §3.1.
 
 ## 0.17.2 — Nothing ever lands outside the 0-1 tile
 
