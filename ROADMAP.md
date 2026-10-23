@@ -134,12 +134,12 @@ These are the only checks that can turn class (b) into class (a), and the only
 ones that can authorise the words "verified", "tested" or a performance figure in
 public. Each gate produces a dated record that stays with the release.
 
-| Gate | What is executed | Pass criteria | Evidence to keep |
-|---|---|---|---|
-| **G1 — Release gate on the CC0 rifle asset** | Install 0.34.0 the documented way, **restart Blender**, open the gate asset — Poly Haven `bolt_action_rifle_7_62`, CC0, author Mateusz Sadek, <https://polyhaven.com/a/bolt_action_rifle_7_62> — re-downloaded from that source and hash-verified, run **Check Mesh**, then **Unwrap** | Check Mesh report read and its blockers/warnings accounted for; Unwrap finishes with no traceback and no silent zero-area islands; island count and quality numbers recorded; console output captured | Gate log with date, add-on version, Blender build hash, asset source URL and per-file SHA-256, mesh vertex/face/island counts, Check Mesh summary, timings, unsaved warnings |
-| **G2 — RizomUV manual round trip** | Export UV to FBX with the RizomUV launch option, unwrap and save in RizomUV, Import UV from FBX / Import Last | UVs return by position onto the same object; layer name and match reported; no hang, no orphaned process | Dated log: RizomUV version, export path, import path, object and layer name, match/failure counts |
-| **G3 — Clean install lifecycle** | Fresh Blender config, install ZIP, restart, enable, Check Mesh, disable, enable again, restart, enable, remove | No traceback in the console at any step; documented restart requirement reproduced, not worked around | Console log per step for each target Blender version |
-| **G4 — Publication authorisation** | Owner reviews any asset, `.blend`, FBX, screenshot or log intended for the public case study | Explicit approval recorded before publication; sanitised if paths or names leak | Written approval note |
+| Gate | What is executed | Pass criteria | Evidence to keep | Verdict |
+|---|---|---|---|---|
+| **G1 — Release gate on the CC0 rifle asset** | Install 0.34.0 the documented way, **restart Blender**, open the gate asset — Poly Haven `bolt_action_rifle_7_62`, CC0, author Mateusz Sadek, <https://polyhaven.com/a/bolt_action_rifle_7_62> — re-downloaded from that source and hash-verified, run **Check Mesh**, then **Unwrap** | Check Mesh report read and its blockers/warnings accounted for; Unwrap finishes with no traceback and no silent zero-area islands; island count and quality numbers recorded; console output captured | Gate log with date, add-on version, Blender build hash, asset source URL and per-file SHA-256, mesh vertex/face/island counts, Check Mesh summary, timings, unsaved warnings | **OPEN** — pending the interactive install → restart → Check Mesh → Unwrap session on the gate asset (the 2026-10-23 headless run is non-gate support only) |
+| **G2 — RizomUV manual round trip** | Export UV to FBX with the RizomUV launch option, unwrap and save in RizomUV, Import UV from FBX / Import Last | UVs return by position onto the same object; layer name and match reported; no hang, no orphaned process | Dated log: RizomUV version, export path, import path, object and layer name, match/failure counts | **G2 PASS — 2026-10-23 — RizomUV 2025.0.117 — match 500/500** |
+| **G3 — Clean install lifecycle** | Fresh Blender config, install ZIP, restart, enable, Check Mesh, disable, enable again, restart, enable, remove | No traceback in the console at any step; documented restart requirement reproduced, not worked around | Console log per step for each target Blender version | **G3 PASS — 2026-10-23 — Blender 5.2.0 LTS (fbe6228777e7) — ZIP sha256 df81d098...93a1**; Blender 4.2 LTS branch: **NOT EXECUTED** (4.2 LTS absent on this machine) |
+| **G4 — Publication authorisation** | Owner reviews any asset, `.blend`, FBX, screenshot or log intended for the public case study | Explicit approval recorded before publication; sanitised if paths or names leak | Written approval note | **OPEN** — owner approval not yet recorded |
 
 **G1 asset substitution (2026-10-22).** The production rifle the gate was
 originally written for is no longer available, so the owner has accepted the CC0
@@ -176,9 +176,13 @@ their numbers may be cited as a gate result.
 
 ### 3.1 Recorded so far — automated runs and non-gate headless support
 
-Everything in this table exists as a file in the tree. None of it closes a gate:
-the automated suites are class (a) structural evidence, and the two headless runs
-are **class non-gate** by the rule above. Class (c) stays open.
+Everything in this table exists as a file in the tree or, for the two class (c)
+rows, is the operator's dated console transcription quoted verbatim and kept
+with the release. None of the automated or headless rows closes a gate: the
+automated suites are class (a) structural evidence, and the headless runs are
+**class non-gate** by the rule above. Class (c): **G2 PASS and G3 PASS on
+Blender 5.2 LTS, both 2026-10-23** (last two rows); G1 and the Blender 4.2 LTS
+branch of G3 remain open.
 
 | Evidence | Result as recorded | Artifact | Class |
 |---|---|---|---|
@@ -187,6 +191,8 @@ are **class non-gate** by the rule above. Class (c) stays open.
 | G1-style headless run | 2026-10-23, 19,985 faces (target matched), Check Mesh **0 blocking / 1 warning / 1 note**, Unwrap `FINISHED` twice at **2.70 s** and **2.58 s**, 0 loops outside the 0–1 tile, 0 collapsed UV faces | `_esperimenti/gates/g1_run/report.md`, `metrics.json`, `console.log` | non-gate |
 | G3-style headless run | 2026-10-23, **FAIL at step 5 (Enable)**: `AttributeError: '_RestrictData' object has no attribute 'scenes'`, ZIP sha256 `5860c473…` | `_esperimenti/gates/g3_run/g3_report.md`, `g3_log.txt` | non-gate |
 | G2-style headless run | 2026-10-23, export `FINISHED` (15,788 B FBX), RizomUV live link failed (link port 49152 not opened within 180 s), external edit **simulated inside Blender**, import `FINISHED` with 6/6 faces and 24 loops matched on layer `SmartUV`, 0 unmatched | `_esperimenti/gates/g2_run/runs/20261023-181059/log.txt`, `results.json` | non-gate |
+| G2 manual round trip on Suzanne (operator, Blender GUI + RizomUV) | **G2 PASS — 2026-10-23 — RizomUV 2025.0.117 — match 500/500.** Export & Open → RizomUV opened on `Suzanne_uv.fbx` → unfold + pack in RizomUV 2025.0.117.g4c8bab02 → save → Import UV from FBX. Console verbatim: `UVs imported from Suzanne_uv.fbx onto 'Suzanne' — layer 'SmartUV', 500/500 faces matched, 1968 loops written.` Match 100%, backup layer `SmartUV_backup` created; the em dash mangled in the console line is encoding-only, cosmetic | Operator console transcription of 2026-10-23, kept with the release per the §3 evidence rule | (c) |
+| G3 manual install lifecycle (operator, Blender GUI) | **G3 PASS — 2026-10-23 — Blender 5.2.0 LTS (fbe6228777e7) — ZIP sha256 df81d098...93a1.** Full ZIP sha256 `DF81D09823BE74C512F816E733F02C09516617C7ADE9D9C533CD77EF5CC493A1`; clean install on a fresh config, Intelligent UV panel populated, Check Mesh verbatim: `Mesh is clean: nothing found that would spoil the unwrap.`; disable, re-enable, restart, enable, remove — lifecycle OK, no traceback at any step. Blender 4.2 LTS branch: NOT EXECUTED (4.2 LTS absent on this machine) | Operator console transcription of 2026-10-23, kept with the release per the §3 evidence rule | (c) |
 
 What the G1-style run does and does not support: the measurements are consistent
 with the expectations (no blocking check, no out-of-tile loops, no traceback,
@@ -202,9 +208,10 @@ What the G3-style run changed: the failure was traced to `register()` reading
 commit `e91cf4d` by guarding the collection access. The supplementary probe
 scripts `50`–`53` in the same folder exercise enable, panel, Check Mesh and
 disable/re-enable after that fix, but **their console output was not captured**,
-so no dated lifecycle log exists after the fix. G3 therefore has no passing
-record: it is open pending a full re-run of the lifecycle on the patched ZIP.
-Blender 4.2 LTS was not executed at all (not installed on the gate machine).
+so no dated lifecycle log exists after the fix. G3 therefore had no passing
+record on headless evidence until the operator closed it on 2026-10-23 with the
+manual lifecycle run on the patched ZIP (class (c) row above). Blender 4.2 LTS
+was not executed at all (not installed on the gate machine).
 
 Consequence for this roadmap: the headless runs recorded above are allowed to
 inform the procedure, the checklist wording and where to look; they are **not**
@@ -215,10 +222,13 @@ What the G2-style run does and does not support: it exercises export, import and
 Import Last against a real RizomUV 2025.0 install, but the live link never
 reached RizomUV (port 49152 not opened within 180 s), so the external editing
 step was **simulated inside Blender**. The 6/6 face and 24-loop match therefore
-proves the import path, not a RizomUV round trip. G2 stays open pending an
-interactive desktop session: launch RizomUV, unwrap and save there, import back.
-The earlier Lua-script draft run in the same folder meanwhile confirms the
-documented `-cfi` path does not terminate (240 s timeout, empty log).
+proves the import path, not a RizomUV round trip. G2 stayed open on headless
+evidence until the operator closed it on 2026-10-23 with the interactive
+desktop session on Suzanne: launch RizomUV from Export & Open, unfold and pack
+there, save, import back — 500/500 faces matched, 1968 loops written (class (c)
+row above). The earlier Lua-script draft run in the same folder meanwhile
+confirms the documented `-cfi` path does not terminate (240 s timeout, empty
+log).
 
 ---
 
@@ -662,8 +672,13 @@ Known practical constraints:
 
 **Artifact and install**
 
-- [ ] **G3** — ZIP installs, enables, runs Check Mesh, disables, re-enables,
-      restarts and removes on both target versions with a clean console.
+- [x] **G3** — on Blender **5.2 LTS**: **G3 PASS — 2026-10-23 — Blender 5.2.0
+      LTS (fbe6228777e7) — ZIP sha256 df81d098...93a1**; clean install, panel
+      populated, Check Mesh clean, disable/re-enable, restart, enable, remove —
+      console clean at every step (class (c), §3.1).
+      - [ ] **G3 on Blender 4.2 LTS — NOT EXECUTED** (4.2 LTS absent on this
+        machine); the "both target versions" criterion stays open until this
+        branch is run and logged.
 - [ ] Release ZIP contains only runtime files, licence, user docs and attribution.
 - [ ] Tag, release notes, checksum and file list are published together.
 
@@ -671,8 +686,10 @@ Known practical constraints:
 
 - [ ] Every performance or quality figure in README/release notes traces to a
       gate or benchmark log.
-- [ ] **G2** — RizomUV claims are dated, versioned, and the automated path is
-      labelled experimental or removed.
+- [x] **G2** — RizomUV claims dated and versioned: **G2 PASS — 2026-10-23 —
+      RizomUV 2025.0.117 — match 500/500** (Suzanne manual round trip, class
+      (c), §3.1); the automated path stays behind the experimental toggle in
+      the README.
 - [ ] Known limitations are visible in the README.
 - [ ] No asset, log or screenshot published without authorisation.
 
