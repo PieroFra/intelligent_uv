@@ -17,7 +17,7 @@ dist/
 *.rar
 
 # Output di test e probe (rigenerabili)
-.opencode/tests/test_out*.txt
+.opencode/tests/*_out*.txt
 .opencode/probe/*.png
 *.log
 

@@ -128,7 +128,17 @@ def register():
     # Dropping the pointer clears the settings stored on every scene, so their
     # values are read first and written back once the pointer is re-attached.
     snapshot = {}
-    for scene in bpy.data.scenes:
+    try:
+        # Blender runs this function inside RestrictBlend when the add-on is
+        # enabled: `bpy.data` is a _RestrictData object there and exposes no
+        # collections, so the scenes are read through getattr and a missing
+        # collection leaves the snapshot empty instead of aborting the load.
+        scenes = getattr(bpy.data, "scenes", None) or ()
+    except Exception:
+        # A: restricted data that still raises is treated the same way, the
+        # values are simply not restored afterwards.
+        scenes = ()
+    for scene in scenes:
         settings = getattr(scene, "intelligent_uv_settings", None)
         if settings is None:
             continue
@@ -181,7 +191,12 @@ def register():
                 type=IntelligentUVProperties
             )
         for scene, values in snapshot.items():
-            settings = getattr(scene, "intelligent_uv_settings", None)
+            try:
+                settings = getattr(scene, "intelligent_uv_settings", None)
+            except Exception:
+                # B: a scene that disappeared while the classes were being
+                # replaced cannot take its values back.
+                continue
             if settings is None:
                 continue
             for identifier, value in values.items():
