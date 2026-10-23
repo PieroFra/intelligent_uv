@@ -31,3 +31,13 @@ opencode.json
 # Agenti e comandi personali (le skill restano tracciate)
 .opencode/agents/
 .opencode/commands/
+
+# Derivati locali del nucleo deterministico (verdetto, telemetria, lock)
+/.opencode/metrics.jsonl
+/.opencode/verdict.txt
+/.opencode/gate.lock
+/.opencode/scratch/
+/.opencode/INDEX.md
+
+# File temporaneo estraneo (esportazione sessione, mai da committare)
+/verifica-delle-istruzioni-in-agents-md.json
