@@ -7,7 +7,9 @@ with the code.
 
 Baseline: **0.34.0**. Target: the first tagged public release of that baseline,
 with an artifact that installs cleanly and a set of logs that supports every
-claim the README, the release notes and any portfolio material make.
+claim the README, the release notes and any portfolio material make. Post-release
+development and the GitHub publication plan are recorded separately in section 8
+and are not part of this target.
 
 ---
 
@@ -676,7 +678,97 @@ Known practical constraints:
 
 ---
 
+## 8. Post-0.34.0 Development & GitHub Publication Plan
+
+This section is **forward-looking and class (c)-pending**: it records intentions,
+not results. Nothing here is scheduled, no item is an existing capability, and
+none of it may be quoted in public as shipped, tested or measured before the
+release checklist in section 7 is satisfied for that item. It does not reopen the
+"no new UV features" rule of section 6 for the 0.34.0 baseline: those features
+become eligible only **after** the baseline is released.
+
+### 8.1 GitHub Ready — initial publication
+
+Publication of the repository is the first deliverable of this plan, and it
+depends on the repository/ metadata items of section 7, not on new code.
+
+| Input | Current state (read from this tree) | Work required before the first public push |
+|---|---|---|
+| `README.md` | Published user flow still to be reorganised (Phase 6) | Rewrite around Check Mesh → Unwrap → Export/Import; every figure traced to a log or labelled unverified |
+| `LICENSE` | GPL-3.0-or-later, committed | Re-read against the chosen release terms; keep the "terms of distribution ≠ title audit" wording |
+| `THIRD_PARTY.md` | Exists and is committed; RizomUVLink recorded as MIT and **not vendored** | Re-verify the recorded SHA-256 digests before tagging; update if any audited file changed |
+| Showcase assets | None authorised | **G4** approval per asset before any image, `.blend`, FBX or log is published; sanitise paths and names |
+| Repository metadata | Private, no remote, author field still `"Your Name"` | Real author, repository/support URLs, visibility decision recorded (section 6 and Phase 3) |
+
+Rules for this sub-item:
+
+- The publication commit set is documentation and metadata only: no add-on code
+  changes ride along with the "GitHub ready" milestone.
+- The ZIP published with the first tag is the Phase 5 artifact, built from a
+  clean clone, with its checksum and file list in the release notes.
+- Asset licensing is recorded next to the asset, not inferred from the fact that
+  a download was free.
+
+### 8.2 Features to complete or expand
+
+Each item below is a **plan**, with the open question that has to be answered
+before implementation. None of them is covered by the current automated suites
+(smoke 14/14 and pipeline 7/7 run on primitives only), so each one needs its own
+verification before it can be described as working.
+
+| # | Item | Open question to settle first | Verification it would need |
+|---|---|---|---|
+| F1 | **UDIM and advanced multi-tile packing** — UDIM grid support and automatic multi-material packing | What `udim.py` does today versus what the UI exposes; whether the native unwrap can target a UDIM grid at all | A pipeline case with more than one tile: loops land in the intended tile, no tile collision, stable across reruns |
+| F2 | **Bidirectional interactive live bridge with RizomUV** — desktop/socket handshake resolution | Which side fails to open the link port, and whether the documented launch path can be made to report it; the G2-style headless run saw port 49152 not opened within 180 s | **G2** executed interactively first; the bridge is only "interactive" after a real desktop round trip is logged |
+| F3 | **Seam pinning and intelligent preservation in Edit Mode** — interactive UV seam editing | How seam state survives the pipeline's seam marking and region merge without being overwritten | Edit Mode negative path (section 5 item 2) plus a preservation case where a pinned seam reappears after Unwrap |
+| F4 | **Multi-object batch unwrapping with global texel density preservation** | How texel density is currently computed per object and what "global" means across objects of different scale | A batch run on several objects asserting the density target is met globally, with the measured values recorded |
+
+Constraints that stay in force for F1–F4:
+
+- One module per change; no renames of `intelligent_uv_settings`, the
+  `IntelligentUV_*` classes, operator ids, panel or `bl_category`.
+- No new dependencies beyond `bpy`, `bmesh`, `mathutils`, `numpy`; RizomUV stays
+  optional and lazily imported.
+- F2 cannot claim cross-platform parity: the live link remains Windows-only and
+  requires a licensed install.
+- None of these features may be used to justify a release number bump before the
+  gate that exercises it exists.
+
+### 8.3 Validation — formal G2 and G3 in an interactive desktop session
+
+The two open gates are closed only by a human on a desk, not by a headless run.
+This sub-item restates that requirement so it is not lost among the features
+above.
+
+- **G2 — RizomUV manual round trip.** Install the ZIP, restart Blender, launch
+  RizomUV from the export path, unwrap and save there, then Import UV from FBX /
+  Import Last. Record RizomUV version, export and import paths, object and layer
+  name, and match/failure counts. The existing headless G2-style run simulated
+  the external edit inside Blender, so it does not close this gate.
+- **G3 — clean install lifecycle.** Fresh configuration, install ZIP, restart,
+  enable, Check Mesh, disable, re-enable, restart, enable, remove — console read
+  at every step on both target versions. The G3-style headless run failed at
+  step 5 with an `AttributeError` on `_RestrictData`; the cause was fixed in
+  `e91cf4d`, but no dated lifecycle log exists after that fix, so G3 remains
+  open.
+- Both gates need a dated log kept with the release; a passing UI is not
+  evidence if the console shows a traceback.
+- Until both are closed, the public wording stays "manual, interactive,
+  unverified headless" for RizomUV and "tested on the logged Blender builds
+  only" for the add-on.
+
+---
+
 ## Appendix — revision history of this file
+
+**Latest revision** adds section 8, *Post-0.34.0 Development & GitHub
+Publication Plan*: the GitHub-ready publication inputs with their current state
+(read from the tree), the four planned feature areas (UDIM/multi-tile packing,
+interactive RizomUV live bridge, seam pinning in Edit Mode, multi-object batch
+unwrapping with global texel density) each with the question to settle before
+implementation, and the restatement that G2 and G3 require an interactive
+desktop session. It is a plan: it certifies no gate and schedules nothing, and
+it does not lift the section 6 non-goal for the 0.34.0 baseline.
 
 **This revision** restructured the document around three evidence classes and
 reordered the phases so the manual release gate comes first. It added: the
