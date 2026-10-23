@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.34.0 — Registration can run twice; author and licence recorded
+## 0.34.0 — Registration is idempotent; face reads portable; overlap checked per region; author and licence recorded
 
 This is the baseline `bl_info` declares. Two limits apply to this entry, and
 both are deliberate:
@@ -25,6 +25,24 @@ both are deliberate:
   (`_registered_name`) and detaches the Scene pointer before the
   `PropertyGroup` behind it is replaced. Scene settings are snapshotted before
   the pointer is dropped and written back after it is re-attached.
+- Face centres and normals are now read portably across Blender 4.2 and 5.2.
+  Both were read behind a `hasattr(value, "__iter__")` guard that a
+  `mathutils.Vector` does not satisfy on every build (5.2 reports none), and
+  the guard failed silently: the analysis kept its all-zero default centres and
+  a `(0, 1, 0)` fallback normal per face without a word. With every centre at
+  the origin, symmetry detection hashed all faces into a single bucket and
+  degraded to comparing every pair, and the seam planner's concave-edge
+  preference had no position to work with. The reads are now indexed
+  (`value[0..2]`) inside `try/except`, and each pass appends one aggregated
+  warning naming how many of the mesh's faces could not be read.
+- Overlap verification on the external path now runs at seam-region
+  granularity instead of mesh-component granularity. `_analyze_islands`
+  validates the planner's per-face `region_ids` against the polygon count and
+  uses them whatever the path, since they survive the RizomUV round trip; it
+  warns explicitly when it has to fall back to mesh components. Component
+  outlines merged unrelated seam regions into a single polygon, which made the
+  candidate and containment check of the overlap test meaningless on
+  multi-component meshes.
 
 **Changed**
 
@@ -42,11 +60,14 @@ both are deliberate:
 
 - Smoke suite `.opencode/tests/smoke_test.py`, run through
   `.opencode/scripts/run_tests.ps1`: **14 checks, 14 passed, 0 failed** on
-  Blender 5.2.0 LTS (hash `fbe6228777e7`, built 2026-07-14). The run includes
-  the `doppio_register` and `re-register` checks that cover the fix above.
+  Blender 5.2.0 LTS (hash `fbe6228777e7`, built 2026-07-14), unchanged by the
+  fixes in this entry. The `doppio_register` and `re-register` checks are the
+  ones that exercise the registration fix.
 - Scope of that suite: compilation, import, `bl_info`, registration and
   re-registration, the Scene pointer, class/operator/property counts, the panel
-  and unregister. It does **not** exercise the UV pipeline.
+  and unregister. It does **not** exercise the UV pipeline, so the portable
+  face reads and the region-level overlap check are recorded as code changes
+  without automated coverage here.
 
 ## 0.17.2 — Nothing ever lands outside the 0-1 tile
 
