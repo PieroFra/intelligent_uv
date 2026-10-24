@@ -28,9 +28,8 @@ _esperimenti/
 AGENTS.md
 opencode.json
 
-# Agenti e comandi personali (le skill restano tracciate)
-.opencode/agents/
-.opencode/commands/
+# Cartella locale OpenCode (agenti, script, skills): ignorata interamente, resta intatta su disco
+/.opencode/
 
 # Derivati locali del nucleo deterministico (verdetto, telemetria, lock)
 /.opencode/metrics.jsonl
