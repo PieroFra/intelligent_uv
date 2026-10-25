@@ -85,11 +85,24 @@ class _EnglishLayout:
     def split(self, *args, **kwargs):
         return self._child("split", *args, **kwargs)
 
+    def grid_flow(self, *args, **kwargs):
+        return self._child("grid_flow", *args, **kwargs)
+
+    def column_flow(self, *args, **kwargs):
+        return self._child("column_flow", *args, **kwargs)
+
+    def menu_pie(self, *args, **kwargs):
+        return self._child("menu_pie", *args, **kwargs)
+
     def label(self, *args, **kwargs):
         return self._text("label", *args, **kwargs)
 
     def prop(self, *args, **kwargs):
-        if "text" not in kwargs and len(args) >= 2:
+        if (
+            "text" not in kwargs
+            and not kwargs.get("icon_only", False)
+            and len(args) >= 2
+        ):
             try:
                 kwargs["text"] = args[0].bl_rna.properties[args[1]].name
             except Exception:
@@ -101,6 +114,24 @@ class _EnglishLayout:
 
     def menu(self, *args, **kwargs):
         return self._text("menu", *args, **kwargs)
+
+    def prop_enum(self, *args, **kwargs):
+        return self._text("prop_enum", *args, **kwargs)
+
+    def prop_menu_enum(self, *args, **kwargs):
+        return self._text("prop_menu_enum", *args, **kwargs)
+
+    def props_enum(self, *args, **kwargs):
+        return self._text("props_enum", *args, **kwargs)
+
+    def prop_search(self, *args, **kwargs):
+        return self._text("prop_search", *args, **kwargs)
+
+    def operator_menu_enum(self, *args, **kwargs):
+        return self._text("operator_menu_enum", *args, **kwargs)
+
+    def popover(self, *args, **kwargs):
+        return self._text("popover", *args, **kwargs)
 
 
 _QUICK_GUIDE_LINES = (

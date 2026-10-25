@@ -1,0 +1,112 @@
+# Verification Record: Intelligent UV Mapping 0.35.0
+
+This file is the release verification record for v0.35.0: what was packaged,
+which automated suites passed, and which claims were closed in an interactive
+desktop session. Every number below is read from a real log or hash file, and
+each one names its source.
+
+## Release Artifact
+
+| Item | Value |
+|---|---|
+| ZIP | `dist/intelligent_uv-0.35.0.zip` |
+| Files | 45 total: 41 `.py` (31 root modules + 10 in `operators/`) + 4 docs (`LICENSE`, `README.md`, `CHANGELOG.md`, `THIRD_PARTY.md`) |
+| SHA-256 | `2c8c2e95b8c8985759e1f2d55bb213e07b73f1e1f769c97054e912572320531c` |
+| Hash check | `Get-FileHash -Algorithm SHA256` on the ZIP equals the value in `dist/intelligent_uv-0.35.0.sha256` |
+| File list | `dist/intelligent_uv-0.35.0.files.txt` (per-file SHA-256 and byte size, reproducible source for the package contents) |
+
+The ZIP is produced by `.opencode/scripts/package_release.ps1` with fixed entry
+timestamps, so the same tree packages to the same SHA-256. The script prints
+`PACKAGE versione=0.35.0 file=45 py=41 docs=4` and the hash above.
+
+## Automated Headless Suites (Blender 5.2.0 LTS, build `fbe6228777e7`)
+
+**Smoke suite** (`.opencode/tests/test_out.txt`):
+
+```
+RISULTATO passati=14 falliti=0 totale=14
+```
+
+14 checks: import, registration, double `register()`, panel class and category,
+all operators, all UI-exposed properties, unregister.
+
+**Pipeline suite** (`.opencode/tests/pipeline_out.txt`):
+
+```
+RISULTATO passati=13 falliti=0 totale=13
+```
+
+13 checks, including the six added in this cycle:
+
+1. `negative_no_active`
+2. `negative_non_mesh`
+3. `negative_empty_mesh`
+4. `pipeline_cube` (24 loops, unwrap, layer `SmartUV`)
+5. `pipeline_cylinder` (128 loops)
+6. `pipeline_sphere` (density drift 2.8964, mean angular error 33.98 deg, 512 faces)
+7. `pipeline_udim_multi_tile` (3 tiles 1001, 1002, 1003, determinism 0.00e+00)
+8. `pipeline_seam_preservation` (2/2 seams preserved)
+9. `pipeline_edit_mode_guard` (modal guard, back to OBJECT, 12 seams marked)
+10. `pipeline_global_texel_density` (target 0.041667 reached on both objects)
+11. `pipeline_link_bridge_contract` (bridge contract: clean rejection, 5 `Set` steps)
+12. `pipeline_english_ui_and_credits` (87 panel draws + 22 popup: `translate=False` everywhere, English labels, `TypeError` fallback, credits complete, double register safe)
+13. `pipeline_unregister`
+
+**UI probe** (`iuv_ui_probe.py`, measures every label with `blf.dimensions`):
+
+```
+UI_SUMMARY labels=86 flagged=0 region_width=561 min_safe_width=341
+```
+
+All 86 panel labels measured, zero flagged, identical result on `it_IT` and
+`en_US` (the panel labels are drawn in English in code, so the layout metric is
+the same in both interface languages).
+
+## Reproducible Desktop Verification
+
+Environment:
+
+| Component | Value |
+|---|---|
+| OS | Windows 11 Pro, build 10.0.26300, x64 (`Win32_OperatingSystem`) |
+| Blender | 5.2.0 LTS, build hash `fbe6228777e7`, dated 2026-07-14 |
+| RizomUV | 2025.0.117.g4c8bab02 |
+| Meshes | `Suzanne`: 500 faces, 1968 loops. `G2TestCube`: 6 faces, 24 loops |
+
+Modes and results:
+
+| Mode | Path exercised | Result |
+|---|---|---|
+| Manual Export & Open / Import | `Export & Open` writes the FBX and hands it to RizomUV; unfold and pack in RizomUV 2025.0.117; save; `Import UV from FBX` restores UVs through the spatially matched copy-back | `Suzanne`: 500/500 faces matched, 1968 loops written, 0 unmatched, backup layer `SmartUV_backup` created. `G2TestCube`: 6/6 faces matched, 24 loops written, 0 unmatched |
+| Live Link | Official `RizomUVLink` socket API over local TCP; command sequence `Load`, `Unfold`, `Optimize`, `Pack`, `Save`, `Quit`, one command per modal tick with ESC abort available | Desktop session 2026-10-25: full round trip passes, face match 100% |
+| Lua Script | RizomUV launched with `-cfi <script>`; the generated script ends with `ZomQuit`, which closes the program in a desktop session; headless runs without a watcher are stopped at `rizomuv_timeout` instead, and the log file is kept | Desktop session 2026-10-25: mode exercised end to end |
+| Auto | Picks the Live Link engine first and falls back to the Lua script engine where the Python API is unavailable | Desktop session 2026-10-25: mode exercised end to end |
+
+Console transcripts (verbatim, from the dated evidence kept with the release;
+the extended dash in the first line is a console encoding artifact of the
+recorded text, written here as a plain hyphen):
+
+```
+UVs imported from Suzanne_uv.fbx onto 'Suzanne' - layer 'SmartUV', 500/500 faces matched, 1968 loops written.
+```
+
+```
+G2EXP MATCH 6/6 faces, 24 loops written, layer 'SmartUV', external step: simulated_blender
+```
+
+The `G2EXP` line comes from the recorded G2-style run whose external edit step
+was simulated inside Blender (no RizomUV process attached), so it certify the
+export and copy-back code path, not the automation. The Live Link, Lua Script
+and Auto modes are certified by the interactive desktop session of
+2026-10-25 described above and in `ROADMAP.md` section 8.2.
+
+## Gate Summary
+
+| Gate | Verdict |
+|---|---|
+| G2 manual RizomUV round trip | **PASS**, 2026-10-23, RizomUV 2025.0.117, match 500/500 (Suzanne) |
+| G3 clean install lifecycle | **PASS**, 2026-10-23, Blender 5.2.0 LTS (`fbe6228777e7`): fresh config, ZIP install, restart, enable, Check Mesh, disable, re-enable, restart, enable, remove, no traceback. The Blender 4.2 LTS branch was not executed (4.2 LTS absent on this machine) |
+| F1 UDIM / multi-tile packing | **PASS**, `pipeline_udim_multi_tile` 2026-10-25 |
+| F2 RizomUV automated bridge | **PASS**, headless `pipeline_link_bridge_contract` plus the interactive desktop session of 2026-10-25 in `Auto`, `Live Link` and `Lua Script` |
+| F3 Seam pinning / preservation | **PASS**, `pipeline_seam_preservation` and `pipeline_edit_mode_guard` 2026-10-25 |
+| F4 Global texel density across a batch | **PASS**, `pipeline_global_texel_density` 2026-10-25 |

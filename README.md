@@ -108,7 +108,7 @@ ones are Windows-only.
 |---|---|---|
 | **Manual Round Trip** (`Export & Open` to `Import` / `Import from...`) | Exports `<name>_uv.fbx` with the planned seams already cut (they travel as UV island borders, because the FBX format has no seam flag) and opens it in RizomUV for hand work. **Import** reads the UVs back onto the `SmartUV` layer, saving the previous one in `SmartUV_backup`. | Works on every platform with no extra setup, and it is the easiest way to diagnose. This is the default behaviour. |
 | **Automated: Live Link** | Drives RizomUV 2025+ through its official Python API (`RizomUVLink`) over a local socket, step by step (`Load` to `Set` to `Unfold` to `Optimize` to `Pack` to `Save`), one command per modal tick so Blender stays responsive while RizomUV works. Options: **Optimize in RizomUV** and **Keep RizomUV Open**. | One click, watched all the way. Windows only; RizomUV's Python API (`RizomUVLink`, included in the install) must be present. |
-| **Automated: Lua Script** | Generates a `.lua` script and launches `rizomuv.exe` headless with `rizomuv.exe -cfi`, and the script closes the session itself at the end. | Installations of RizomUV whose version ships without the `RizomUVLink` Python API. |
+| **Automated: Lua Script** | Generates a `.lua` script ending in `ZomQuit({})` and launches RizomUV with `rizomuv.exe -cfi <script.lua>`. In an interactive desktop session the script runs end to end (`ZomLoad` → `ZomSet` → `ZomPack` → `ZomSave` → `ZomQuit`) and the process exits with code 0. In a headless or blocked session, where RizomUV never initialises its graphics window, `ZomQuit` is not reached and the modal timer stops the process at **Timeout (s)** (`rizomuv_timeout`), keeping the native unwrap already stored on the mesh. | Installations of RizomUV whose version ships without the `RizomUVLink` Python API. |
 | **Automated: Auto** | Uses the Live Link automatically when it is available and falls back to the Lua Script engine otherwise. | The recommended setting. Enable **Automated RizomUV** under **Advanced > Tools**, inside the **RizomUV Bridge (Windows)** box. |
 
 The automated modes live behind the **Automated RizomUV** toggle, which is off
@@ -164,10 +164,13 @@ defaults do not fit.
   (`.opencode/tests/test_out.txt`) over import, registration including a second
   `register()` call in the same session, the panel, the operators, the
   properties exposed in the UI and unregister.
-- Pipeline suite: **12/12**, 0 failed (`.opencode/tests/pipeline_out.txt`):
+- Pipeline suite: **13/13**, 0 failed (`.opencode/tests/pipeline_out.txt`):
   the native pipeline on primitives, plus UDIM multi-tile packing, seam
-  preservation, the Edit Mode guard, global texel density across a batch and
-  the RizomUV link bridge contract.
+  preservation, the Edit Mode guard, global texel density across a batch, the
+  RizomUV link bridge contract and the English-lock UI check
+  (`pipeline_english_ui_and_credits`, which draws the panel and the License &
+  Credits popup on a spy layout with an Italian language set and asserts
+  `translate=False` on every text call).
 - UI probe: **86 labels measured with `blf.dimensions`, flagged=0** in Italian
   and English (`.opencode/scripts/run_ui_probe.ps1`).
 - **G2 PASS, 2026-10-23**: manual RizomUV round trip on Suzanne with RizomUV

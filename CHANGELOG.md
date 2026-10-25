@@ -10,10 +10,10 @@ Script) on 2026-10-25.
 
 **Added**
 
-- Pipeline suite grew from 7 to 12 checks with five new cases:
+- Pipeline suite grew from 7 to 13 checks with six new cases:
   `pipeline_udim_multi_tile`, `pipeline_seam_preservation`,
   `pipeline_edit_mode_guard`, `pipeline_global_texel_density`,
-  `pipeline_link_bridge_contract`.
+  `pipeline_link_bridge_contract`, `pipeline_english_ui_and_credits`.
 - Global texel density across a batch: `texel_density.normalize(...,
   target_density=None)`, `texel_density.world_area()` and
   `texel_density.global_target_density()`; `operators/batch.py::_init_batch(queue,
@@ -49,15 +49,17 @@ Script) on 2026-10-25.
 - F2 RizomUV automated bridge: `pipeline_link_bridge_contract` PASS plus the
   operator's desktop verification of 2026-10-25 on Blender 5.2.0 LTS with
   RizomUV 2025.0.117: **Live Link** through the official `RizomUVLink` socket
-  API, **Lua Script** through the `-cfi` launch, and **Auto** picking the live
-  link first and falling back to the script engine. In the panel, the probe
+  API, **Lua Script** through the `-cfi` launch (which executes `ZomQuit` at
+  the end of the generated script in desktop sessions, or is stopped at
+  `rizomuv_timeout` if headless), and **Auto** picking the live link first and
+  falling back to the script engine. In the panel, the probe
   `ensure_link_on_path` now runs before the availability check, so the "Live
   link available" label (or the reason shown instead) reflects the real state
   of `rizomuv_path`.
-- UI probe (`.opencode/scripts/run_ui_probe.ps1`): **85 panel labels measured
+- UI probe (`.opencode/scripts/run_ui_probe.ps1`): **86 panel labels measured
   with `blf.dimensions`, flagged=0** in Italian and English; screenshots in
   `%TEMP%\opencode\iuv_gui\`.
-- Suites: pipeline **12/12** (`.opencode/tests/pipeline_out.txt`), smoke
+- Suites: pipeline **13/13** (`.opencode/tests/pipeline_out.txt`), smoke
   **14/14** (`.opencode/tests/test_out.txt`). Gate verdict `VERIFY_OK`
   recorded for task f134-code-01.
 
