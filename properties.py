@@ -540,12 +540,10 @@ class IntelligentUVProperties(bpy.types.PropertyGroup):
 
     # RizomUV Engine Settings
     use_rizomuv: bpy.props.BoolProperty(
-        name="Automated RizomUV (experimental)",
+        name="Automated RizomUV",
         description=(
-            "Drive RizomUV from inside the Run operator. This has never "
-            "completed a round trip reliably: the script flag does not run a "
-            "batch, and the live link needs a Windows-only library. Use "
-            "Export / Import instead unless you are testing this path"
+            "Drive RizomUV automatically from inside the Unwrap operator via "
+            "Live Link or Lua Script (Windows)"
         ),
         default=False,
     )

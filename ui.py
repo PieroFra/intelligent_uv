@@ -38,6 +38,145 @@ from .presets import (
 # 14. UI PANEL
 # =============================================================================
 
+class _EnglishLayout:
+    """Layout proxy that keeps labels untranslated.
+
+    Almost every label in this panel is a technical term (VSA, UDIM, cone
+    angle, texel density): translating them renames the controls and the
+    docs stop matching what the user reads on screen. The proxy forwards
+    everything to the real layout and only adds ``translate=False`` to the
+    string-carrying calls, so call sites stay plain ``row.operator(...)``.
+    """
+
+    __slots__ = ("_layout",)
+
+    def __init__(self, layout):
+        object.__setattr__(self, "_layout", layout)
+
+    def __getattr__(self, name):
+        return getattr(self._layout, name)
+
+    def __setattr__(self, name, value):
+        setattr(self._layout, name, value)
+
+    def _child(self, name, *args, **kwargs):
+        method = getattr(self._layout, name)
+        return _EnglishLayout(method(*args, **kwargs))
+
+    def _text(self, name, *args, **kwargs):
+        kwargs.setdefault("translate", False)
+        method = getattr(self._layout, name)
+        try:
+            return method(*args, **kwargs)
+        except TypeError:
+            # Older layouts may lack the `translate` keyword.
+            kwargs.pop("translate", None)
+            return method(*args, **kwargs)
+
+    def row(self, *args, **kwargs):
+        return self._child("row", *args, **kwargs)
+
+    def column(self, *args, **kwargs):
+        return self._child("column", *args, **kwargs)
+
+    def box(self, *args, **kwargs):
+        return self._child("box", *args, **kwargs)
+
+    def split(self, *args, **kwargs):
+        return self._child("split", *args, **kwargs)
+
+    def label(self, *args, **kwargs):
+        return self._text("label", *args, **kwargs)
+
+    def prop(self, *args, **kwargs):
+        if "text" not in kwargs and len(args) >= 2:
+            try:
+                kwargs["text"] = args[0].bl_rna.properties[args[1]].name
+            except Exception:
+                pass
+        return self._text("prop", *args, **kwargs)
+
+    def operator(self, *args, **kwargs):
+        return self._text("operator", *args, **kwargs)
+
+    def menu(self, *args, **kwargs):
+        return self._text("menu", *args, **kwargs)
+
+
+_QUICK_GUIDE_LINES = (
+    "Check Mesh - validates the mesh before anything is unwrapped.",
+    "Unwrap / Preview - full run on the scene, or a dry run on the mesh.",
+    "RizomUV Auto - batch hand-off, waits for the islands to come back.",
+    "RizomUV Live Link - keeps the session open and syncs both ways.",
+    "RizomUV Lua Script - drives RizomUV headless, no GUI needed.",
+)
+
+_LICENSE_LINES = (
+    "Free software released under the GNU GPL v3.0 or later.",
+    "You are free to use, study, share, and modify it.",
+    "No warranty: use it at your own risk.",
+)
+
+
+class IntelligentUV_OT_ShowInfo(bpy.types.Operator):
+    """Popup with author, license, and documentation links."""
+
+    bl_idname = "intelligent_uv.show_info"
+    bl_label = "License & Credits"
+    bl_description = "Show add-on author, license, and documentation links"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=520)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def draw(self, context):
+        from pathlib import Path
+
+        layout = _EnglishLayout(self.layout)
+
+        try:
+            from . import bl_info as _bl_info
+            version = ".".join(str(n) for n in _bl_info.get("version", ()))
+        except Exception:
+            version = "?"
+
+        layout.label(text=f"Intelligent UV Mapping v{version}", icon='UV')
+        layout.label(text="Author: Pierfrancesco Diodato", icon='USER')
+
+        row = layout.row(align=True)
+        row.operator(
+            "wm.url_open", text="GitHub Repository", icon='URL',
+        ).url = "https://github.com/PieroFra/intelligent_uv"
+        row.operator(
+            "wm.url_open", text="Discord Profile", icon='URL',
+        ).url = "https://discord.com/users/1176582483165327382"
+        row.operator(
+            "wm.url_open", text="Full GPL-3.0 License", icon='URL',
+        ).url = "https://www.gnu.org/licenses/gpl-3.0.html"
+
+        box = layout.box()
+        box.label(text="Quick Guide", icon='TEXT')
+        for line in _QUICK_GUIDE_LINES:
+            box.label(text=line)
+
+        box = layout.box()
+        box.label(text="License: GPL-3.0-or-later", icon='INFO')
+        for line in _LICENSE_LINES:
+            box.label(text=line)
+
+        root = Path(__file__).resolve().parent
+        local = layout.row(align=True)
+        for fname in ("README.md", "CHANGELOG.md", "LICENSE"):
+            path = root.joinpath(fname)
+            if path.is_file():
+                local.operator(
+                    "wm.url_open", text=fname, icon='FILEBROWSER',
+                ).url = path.as_uri()
+
+
 class VIEW3D_PT_IntelligentUV(bpy.types.Panel):
     """Main panel in the 3D View N sidebar."""
 
@@ -53,7 +192,7 @@ class VIEW3D_PT_IntelligentUV(bpy.types.Panel):
         return bool(scene) and hasattr(scene, "intelligent_uv_settings")
 
     def draw(self, context):
-        layout = self.layout
+        layout = _EnglishLayout(self.layout)
         settings = context.scene.intelligent_uv_settings
 
         try:
@@ -126,7 +265,7 @@ class VIEW3D_PT_IntelligentUV(bpy.types.Panel):
         box = layout.box()
         box.label(text="Layout", icon='UV')
         col = box.column(align=True)
-        col.prop(settings, "texture_resolution_mode", text="Resolution")
+        col.prop(settings, "texture_resolution_mode", text="Tex Size")
         if settings.texture_resolution_mode == 'CUSTOM':
             col.prop(settings, "custom_texture_resolution", text="Pixels")
 
@@ -165,6 +304,15 @@ class VIEW3D_PT_IntelligentUV(bpy.types.Panel):
         )
 
         layout.separator()
+        row = layout.row()
+        row.operator(
+            IntelligentUV_OT_ShowInfo.bl_idname,
+            text="License & Credits", icon='INFO',
+        )
+        sub = row.row()
+        sub.alignment = 'RIGHT'
+        sub.label(text=f"v{version}")
+
         layout.prop(
             settings, "show_advanced",
             icon='TRIA_DOWN' if settings.show_advanced else 'TRIA_RIGHT',
@@ -173,10 +321,6 @@ class VIEW3D_PT_IntelligentUV(bpy.types.Panel):
 
         if settings.show_advanced:
             self._draw_advanced(layout, settings)
-
-        row = layout.row()
-        row.alignment = 'RIGHT'
-        row.label(text=f"v{version}")
 
     def _draw_advanced(self, layout, settings):
         """Everything that has a sensible default and rarely needs changing."""
@@ -260,7 +404,7 @@ class VIEW3D_PT_IntelligentUV(bpy.types.Panel):
         col.prop(settings, "use_rizomuv")
         if settings.use_rizomuv:
             warn = col.box()
-            warn.label(text="Experimental, may hang", icon='ERROR')
+            warn.label(text="RizomUV Bridge (Windows)", icon='INFO')
             warn.prop(settings, "rizomuv_engine_mode", text="Mode")
             from .rizomuv_link import (
                 ensure_link_on_path as _link_probe,
@@ -275,5 +419,7 @@ class VIEW3D_PT_IntelligentUV(bpy.types.Panel):
                 r.label(text="Live link available", icon='CHECKMARK')
             else:
                 r.label(text=_link_reason()[:120], icon='INFO')
+            warn.prop(settings, "link_optimize")
+            warn.prop(settings, "link_keep_open")
             warn.prop(settings, "rizomuv_timeout", text="Timeout (s)")
             warn.prop(settings, "keep_temp_files")

@@ -1,10 +1,12 @@
 # Changelog
 
-## 0.35.0 — UDIM tiles verified, seam pinning verified, global texel density across a batch
+## 0.35.0 - UDIM tiles verified, seam pinning verified, global texel density across a batch, RizomUV bridge verified
 
-Three of the four feature items tracked in `ROADMAP.md` section 8.2 (F1, F3,
-F4) now have headless pipeline coverage. F2 is half closed: the bridge
-contract is verified headless, the interactive desktop round trip is not.
+All four feature items tracked in `ROADMAP.md` section 8.2 (F1, F2, F3, F4)
+are verified now. F2 is closed: the headless bridge contract passes, and the
+operator verified the automated bridge in a real desktop session on Blender
+5.2.0 LTS with RizomUV 2025.0.117 in all three modes (Auto, Live Link, Lua
+Script) on 2026-10-25.
 
 **Added**
 
@@ -18,6 +20,19 @@ contract is verified headless, the interactive desktop round trip is not.
   context=None)` computes `self._global_density`, and `operators/native.py`
   passes it to the normalization and skips coverage scaling while it is active
   (scaling each object on its own would rescale every object).
+- New **License & Credits** button in the main panel (`intelligent_uv.show_info`,
+  `ui.py`): popup with the author (Pierfrancesco Diodato), the licence
+  (GPL-3.0-or-later), a quick guide, one-click links to the GitHub repository,
+  the Discord profile and the full GPL-3.0 text, and openers for the local
+  README.md, CHANGELOG.md and LICENSE files.
+- The panel is drawn fully in English whatever the Blender language:
+  `_EnglishLayout` (`ui.py`) wraps the layout so technical terms are never
+  part-translated, which was producing mixed-language labels on non-English
+  setups.
+- Live Link options exposed in the panel: under **Advanced > Tools**, inside
+  the **RizomUV Bridge (Windows)** box, **Optimize in RizomUV** (`link_optimize`,
+  on by default) and **Keep RizomUV Open** (`link_keep_open`, off by default),
+  beside the mode selector and the Live Link availability probe.
 
 **Verified** (headless, Blender 5.2.0 LTS, build hash `fbe6228777e7`)
 
@@ -31,19 +46,31 @@ contract is verified headless, the interactive desktop round trip is not.
   6.000 vs 24.000, target 0.041667 (max_area 24.000), density reached 0.0417
   on both objects; the local non-global densities were 0.1085 vs 0.0271, about
   4x apart, which is the spread the global target removes.
+- F2 RizomUV automated bridge: `pipeline_link_bridge_contract` PASS plus the
+  operator's desktop verification of 2026-10-25 on Blender 5.2.0 LTS with
+  RizomUV 2025.0.117: **Live Link** through the official `RizomUVLink` socket
+  API, **Lua Script** through the `-cfi` launch, and **Auto** picking the live
+  link first and falling back to the script engine. In the panel, the probe
+  `ensure_link_on_path` now runs before the availability check, so the "Live
+  link available" label (or the reason shown instead) reflects the real state
+  of `rizomuv_path`.
+- UI probe (`.opencode/scripts/run_ui_probe.ps1`): **85 panel labels measured
+  with `blf.dimensions`, flagged=0** in Italian and English; screenshots in
+  `%TEMP%\opencode\iuv_gui\`.
 - Suites: pipeline **12/12** (`.opencode/tests/pipeline_out.txt`), smoke
   **14/14** (`.opencode/tests/test_out.txt`). Gate verdict `VERIFY_OK`
   recorded for task f134-code-01.
 
 **Known limits**
 
-- F2 live bridge: `pipeline_link_bridge_contract` PASS verifies the contract
-  only: `unavailable_reason()` non-empty, `prepare()` rejects cleanly with
+- F2 evidence classes: the headless contract check verifies the contract only
+  (`unavailable_reason()` non-empty, `prepare()` rejects cleanly with
   `RuntimeError` when the link module is missing, `_build_steps` produces the
   expected 6 steps with 5 `Set` calls (UsePixelUnit True, Scaling.Mode 0), and
-  `link_optimize=False` drops the `optimize` step. The round trip through the
-  live link in a desktop session is still a class (c) human gate: F2 is not
-  closed.
+  `link_optimize=False` drops the `optimize` step); the real round trip in all
+  three modes is the operator's class (c) desktop verification of 2026-10-25
+  recorded above. Together they close F2, marked **PASS (desktop + headless
+  contract)** in `ROADMAP.md` section 8.2.
 - The suites run on primitives and synthetic multi-material setups, not on the
   gate asset; G1 stays open (`ROADMAP.md` section 3).
 

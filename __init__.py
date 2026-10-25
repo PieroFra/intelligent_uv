@@ -75,7 +75,7 @@ from .operators import (
 from .manual_io import MANUAL_IO_CLASSES
 from .presets import PRESET_CLASSES
 from .properties import IntelligentUVProperties
-from .ui import VIEW3D_PT_IntelligentUV
+from .ui import IntelligentUV_OT_ShowInfo, VIEW3D_PT_IntelligentUV
 
 bl_info = {
     "name": "Intelligent UV Mapping",
@@ -96,6 +96,7 @@ CLASSES = (
     IntelligentUV_OT_MarkSeams,
     IntelligentUV_OT_Check,
     IntelligentUV_OT_Diagnose,
+    IntelligentUV_OT_ShowInfo,
     VIEW3D_PT_IntelligentUV,
 )
 

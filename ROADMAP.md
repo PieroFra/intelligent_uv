@@ -81,7 +81,7 @@ Everything below is read from the repository, not from earlier plans.
 | Documentation drift | `CHANGELOG.md` now has a **0.34.0** entry, and neither the README nor this file cites `tests/test_core.py` any more: both point at `.opencode/tests/smoke_test.py`. The 0.16.0 version drift in this file is fixed by this revision | `CHANGELOG.md`, `README.md`, grep over `*.md` |
 | User flow in the panel | Nine primary controls, everything else behind **Advanced**; the README documents Check Mesh and the native Unwrap as the normal path | `README.md`, `ui.py` |
 | Relevant operators | `intelligent_uv.check` ("Check Mesh"), `intelligent_uv.run` ("Run Intelligent UV"), `intelligent_uv.export_fbx` ("Export UV to FBX"), `intelligent_uv.import_fbx` ("Import UV from FBX"), `intelligent_uv.import_last` ("Import Last") | `operators/check.py`, `operators/run.py`, `manual_io.py` |
-| RizomUV | Optional, Windows-only, imported lazily. README records a manual round trip against **2025.0.117**. The automated engine sits behind an experimental toggle that the README itself says has **never completed a round trip reliably** | `README.md`, `AGENTS.md`, bridge modules |
+| RizomUV | Optional, Windows-only, imported lazily. README records a manual round trip against **2025.0.117** and the automated bridge (Auto, Live Link, Lua Script) behind the **Automated RizomUV** toggle, off by default; all three modes were verified by the operator in a desktop session on 2026-10-25 (recorded in section 8.2) | `README.md`, `AGENTS.md`, bridge modules |
 | RizomUVLink | MIT, Rizom-Lab, **not vendored**: no package, wheel or binary in the tree; imported at runtime from the RizomUV install | `THIRD_PARTY.md` §2 |
 | Licence audit | Two development scripts under `.opencode/` are byte-identical to the sibling `ACTD` copies (SHA-256 recorded). No vendored Python package. No copyright/SPDX headers found in the add-on. Explicitly **not a legal audit** and no proof of title | `THIRD_PARTY.md` |
 | Internal notes | `AGENTS.md` and `opencode.json` are git-ignored; `AGENTS.md` now matches the smoke log (**14** checks, `doppio_register` listed as verified) and declares the **0.34.0** version | `.gitignore`, `AGENTS.md`, smoke log |
@@ -688,8 +688,9 @@ Known practical constraints:
       gate or benchmark log.
 - [x] **G2** — RizomUV claims dated and versioned: **G2 PASS — 2026-10-23 —
       RizomUV 2025.0.117 — match 500/500** (Suzanne manual round trip, class
-      (c), §3.1); the automated path stays behind the experimental toggle in
-      the README.
+      (c), §3.1); the automated path stays behind the opt-in **Automated
+      RizomUV** toggle in the README and is verified in all three modes
+      (§8.2, desktop session 2026-10-25).
 - [ ] Known limitations are visible in the README.
 - [ ] No asset, log or screenshot published without authorisation.
 
@@ -730,16 +731,15 @@ Rules for this sub-item:
 
 Each item below is a **plan**, with the open question that has to be answered
 before implementation. The pipeline suite grew from 7 to 12 checks
-(`pipeline_out.txt`, smoke unchanged at 14/14): F1, F3 and F4 are verified
-headless as recorded in the Result column, and F2 is partial (contract
-verified headless, interactive desktop round trip still class (c) pending).
-The checks still run on primitives, so nothing here closes the class (c) gates
-of section 3.
+(`pipeline_out.txt`, smoke unchanged at 14/14): F1, F2, F3 and F4 are all
+verified as recorded in the Result column, F2 by headless contract plus the
+operator's desktop session of 2026-10-25. The checks still run on primitives,
+so nothing here closes the class (c) gates of section 3.
 
 | # | Item | Open question to settle first | Verification it would need | Result (recorded 2026-10-25) |
 |---|---|---|---|---|
 | F1 | **UDIM and advanced multi-tile packing** — UDIM grid support and automatic multi-material packing | What `udim.py` does today versus what the UI exposes; whether the native unwrap can target a UDIM grid at all | A pipeline case with more than one tile: loops land in the intended tile, no tile collision, stable across reruns | **Verified headless 2026-10-25.** `pipeline_udim_multi_tile` PASS: 3 tiles (1001, 1002, 1003), 6 faces over 3 material groups, every face inside its assigned tile, no tile collision, determinism drift `0.00e+00` on re-run. |
-| F2 | **Bidirectional interactive live bridge with RizomUV** — desktop/socket handshake resolution | Which side fails to open the link port, and whether the documented launch path can be made to report it; the G2-style headless run saw port 49152 not opened within 180 s | **G2** executed interactively first; the bridge is only "interactive" after a real desktop round trip is logged | **Partial 2026-10-25, F2 not closed.** `pipeline_link_bridge_contract` PASS headless: `unavailable_reason()` non-empty, `prepare()` rejects cleanly with `RuntimeError` when the link module is missing, `_build_steps` produces the expected 6 steps with 5 `Set` (UsePixelUnit True, Scaling.Mode 0), `link_optimize=False` drops `optimize`. The interactive desktop round trip over the live link remains a class (c) human gate, pending. |
+| F2 | **Bidirectional interactive live bridge with RizomUV** — desktop/socket handshake resolution | Which side fails to open the link port, and whether the documented launch path can be made to report it; the G2-style headless run saw port 49152 not opened within 180 s | **G2** executed interactively first; the bridge is only "interactive" after a real desktop round trip is logged | **PASS (desktop + headless contract), 2026-10-25.** `pipeline_link_bridge_contract` PASS headless: `unavailable_reason()` non-empty, `prepare()` rejects cleanly with `RuntimeError` when the link module is missing, `_build_steps` produces the expected 6 steps with 5 `Set` (UsePixelUnit True, Scaling.Mode 0), `link_optimize=False` drops `optimize`. The operator then verified the bridge in the GUI on 2026-10-25 on Blender 5.2.0 LTS + RizomUV 2025.0.117 in all three modes: `Auto`, `Live Link` (official `RizomUVLink` socket API) and `Lua Script` (`-cfi` launch); the panel probe `ensure_link_on_path` runs before the availability check, so the UI label reflects the real link state. |
 | F3 | **Seam pinning and intelligent preservation in Edit Mode** — interactive UV seam editing | How seam state survives the pipeline's seam marking and region merge without being overwritten | Edit Mode negative path (section 5 item 2) plus a preservation case where a pinned seam reappears after Unwrap | **Verified headless 2026-10-25.** `pipeline_seam_preservation` PASS: 2/2 seams preserved after unwrap, UVs finished. `pipeline_edit_mode_guard` PASS: operator invoked in Edit Mode returns to OBJECT without exceptions, 12 seams marked. |
 | F4 | **Multi-object batch unwrapping with global texel density preservation** | How texel density is currently computed per object and what "global" means across objects of different scale | A batch run on several objects asserting the density target is met globally, with the measured values recorded | **Verified headless 2026-10-25.** `pipeline_global_texel_density` PASS: world_area 6.000 vs 24.000, target 0.041667 (max_area 24.000), density reached 0.0417 on both objects; local non-global densities 0.1085 vs 0.0271, about 4x apart. Implementation: `texel_density.normalize(..., target_density=None)`, `texel_density.world_area()`, `texel_density.global_target_density()`; `operators/batch.py::_init_batch(queue, context=None)` computes `self._global_density`; `operators/native.py` passes it to normalization and skips coverage scaling while it is active. |
 
@@ -773,14 +773,24 @@ are registered in §3 and §3.1.
 - The dated logs stay with the release; a passing UI is not evidence if the
   console shows a traceback.
 - What remains open is G1 and the Blender 4.2 LTS branch of G3. The public
-  wording stays "manual, interactive, unverified headless" for the automated
-  RizomUV engine (still behind the experimental toggle) and "tested on the
-  logged Blender builds only" for the add-on: the PASS verdicts cover the
-  manual flow on the named builds, not the headless suites.
+  wording keeps "manual, interactive" for the RizomUV round trip evidence and
+  "tested on the logged Blender builds only" for the add-on: the PASS verdicts
+  cover the flows exercised on the named builds, not the headless suites. The
+  automated bridge (Auto, Live Link, Lua Script) is verified on those builds
+  by the operator's desktop session of 2026-10-25 (section 8.2), class (c)
+  evidence like the gates above, not a headless result.
 
 ---
 
 ## Appendix — revision history of this file
+
+**Revision 2026-10-25** closes F2 in section 8.2: the result cell moves from
+"Partial, F2 not closed" to **PASS (desktop + headless contract)**, adding the
+operator's GUI verification of `Auto`, `Live Link` (official `RizomUVLink`
+socket API) and `Lua Script` (`-cfi` launch) on Blender 5.2.0 LTS + RizomUV
+2025.0.117 on 2026-10-25. The section 1 RizomUV row, the section 7 checklist
+parenthetical and the section 8.3 wording changed only to stop contradicting
+that verdict.
 
 **Latest revision** adds section 8, *Post-0.34.0 Development & GitHub
 Publication Plan*: the GitHub-ready publication inputs with their current state
