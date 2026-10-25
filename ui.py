@@ -262,11 +262,18 @@ class VIEW3D_PT_IntelligentUV(bpy.types.Panel):
             warn = col.box()
             warn.label(text="Experimental, may hang", icon='ERROR')
             warn.prop(settings, "rizomuv_engine_mode", text="Mode")
-            from .rizomuv_link import is_available as _link_available
+            from .rizomuv_link import (
+                ensure_link_on_path as _link_probe,
+                is_available as _link_available,
+                unavailable_reason as _link_reason,
+            )
+            # The probe is the only place that puts <install>\RizomUVLink on
+            # sys.path, so it has to run before the availability check.
+            _link_probe(getattr(settings, "rizomuv_path", "") or None)
             r = warn.row()
             if _link_available():
                 r.label(text="Live link available", icon='CHECKMARK')
             else:
-                r.label(text="Live link unavailable", icon='INFO')
+                r.label(text=_link_reason()[:120], icon='INFO')
             warn.prop(settings, "rizomuv_timeout", text="Timeout (s)")
             warn.prop(settings, "keep_temp_files")
