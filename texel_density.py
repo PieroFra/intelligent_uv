@@ -22,6 +22,92 @@ from .utils import (
 # 11. TEXEL DENSITY NORMALIZER — Step 7
 # =============================================================================
 
+def world_area(obj):
+    """
+    Total face area of a mesh object in world space.
+
+    Returns 0.0 for anything that is not a mesh object.
+    """
+    if not obj or getattr(obj, "type", None) != 'MESH':
+        return 0.0
+
+    mesh = obj.data
+    if mesh is None:
+        return 0.0
+
+    matrix = obj.matrix_world
+    vertices = mesh.vertices
+    total = 0.0
+
+    for polygon in mesh.polygons:
+        indices = polygon.vertices
+        if len(indices) < 3:
+            continue
+
+        try:
+            points = [matrix @ vertices[int(i)].co for i in indices]
+        except Exception:
+            continue
+
+        # Fan triangulation from the first corner, so n-gons are handled
+        # without depending on a triangulation modifier.
+        ax, ay, az = points[0]
+        for k in range(1, len(points) - 1):
+            bx, by, bz = points[k]
+            cx, cy, cz = points[k + 1]
+
+            ux, uy, uz = bx - ax, by - ay, bz - az
+            vx, vy, vz = cx - ax, cy - ay, cz - az
+            nx = uy * vz - uz * vy
+            ny = uz * vx - ux * vz
+            nz = ux * vy - uy * vx
+            total += 0.5 * math.sqrt(nx * nx + ny * ny + nz * nz)
+
+    return max(0.0, total)
+
+
+def global_target_density(objects, coverage=1.0):
+    """
+    Shared texel density target for a set of objects.
+
+    The densest object fills the unit square at `coverage`, so every other
+    object is scaled down instead of being packed at its own density.
+    Returns a dict: {"ok", "target_density", "max_area", "objects"}.
+    """
+    try:
+        cov = float(coverage)
+    except Exception:
+        cov = 1.0
+
+    if cov <= 1e-12:
+        cov = 1.0
+
+    max_area = 0.0
+    valid = 0
+
+    for obj in (objects or []):
+        area = world_area(obj)
+        if area <= 1e-12:
+            continue
+        valid += 1
+        max_area = max(max_area, area)
+
+    if valid == 0 or max_area <= 1e-12:
+        return {
+            "ok": False,
+            "target_density": 0.0,
+            "max_area": 0.0,
+            "objects": 0,
+        }
+
+    return {
+        "ok": True,
+        "target_density": cov / max_area,
+        "max_area": max_area,
+        "objects": valid,
+    }
+
+
 class TexelDensityNormalizer:
     """
     Normalizes texel density across UV islands using:
@@ -49,7 +135,8 @@ class TexelDensityNormalizer:
         return max(0.0, total)
 
     @classmethod
-    def normalize(cls, obj, island_analysis, mesh_analysis, settings=None):
+    def normalize(cls, obj, island_analysis, mesh_analysis, settings=None,
+                  target_density=None):
         """
         Scales each island so texel density is uniform. Must run in Object Mode.
 
@@ -103,8 +190,24 @@ class TexelDensityNormalizer:
                 "normalized_islands": 0,
             }
 
-        # Uniform target density, in UV units^2 per world unit^2.
-        target_density = total_uv_area / total_mesh_area
+        # Uniform target density, in UV units^2 per world unit^2. An explicit
+        # target comes from the batch run and is shared by every object.
+        shared_density = None
+        if target_density is not None:
+            try:
+                shared_density = float(target_density)
+            except Exception:
+                shared_density = None
+
+            if shared_density is not None and shared_density <= 1e-12:
+                shared_density = None
+
+        if shared_density is not None:
+            density = shared_density
+            density_label = f"{density:.4f} (global)"
+        else:
+            density = total_uv_area / total_mesh_area
+            density_label = f"{density:.4f}"
 
         polygons = mesh.polygons
         loop_count = len(mesh.loops)
@@ -120,7 +223,7 @@ class TexelDensityNormalizer:
             if uv_area <= 1e-8 or mesh_area <= 1e-8:
                 continue
 
-            desired_uv_area = target_density * mesh_area
+            desired_uv_area = density * mesh_area
             scale = math.sqrt(desired_uv_area / uv_area)
 
             # Clamp to avoid destructive scaling on degenerate islands.
@@ -188,6 +291,9 @@ class TexelDensityNormalizer:
 
         return {
             "ok": True,
-            "message": f"Texel density normalized on {normalized_count} islands.",
+            "message": (
+                f"Texel density normalized on {normalized_count} islands at "
+                f"{density_label} UV units^2 per world unit^2."
+            ),
             "normalized_islands": normalized_count,
         }

@@ -729,16 +729,19 @@ Rules for this sub-item:
 ### 8.2 Features to complete or expand
 
 Each item below is a **plan**, with the open question that has to be answered
-before implementation. None of them is covered by the current automated suites
-(smoke 14/14 and pipeline 7/7 run on primitives only), so each one needs its own
-verification before it can be described as working.
+before implementation. The pipeline suite grew from 7 to 12 checks
+(`pipeline_out.txt`, smoke unchanged at 14/14): F1, F3 and F4 are verified
+headless as recorded in the Result column, and F2 is partial (contract
+verified headless, interactive desktop round trip still class (c) pending).
+The checks still run on primitives, so nothing here closes the class (c) gates
+of section 3.
 
-| # | Item | Open question to settle first | Verification it would need |
-|---|---|---|---|
-| F1 | **UDIM and advanced multi-tile packing** — UDIM grid support and automatic multi-material packing | What `udim.py` does today versus what the UI exposes; whether the native unwrap can target a UDIM grid at all | A pipeline case with more than one tile: loops land in the intended tile, no tile collision, stable across reruns |
-| F2 | **Bidirectional interactive live bridge with RizomUV** — desktop/socket handshake resolution | Which side fails to open the link port, and whether the documented launch path can be made to report it; the G2-style headless run saw port 49152 not opened within 180 s | **G2** executed interactively first; the bridge is only "interactive" after a real desktop round trip is logged |
-| F3 | **Seam pinning and intelligent preservation in Edit Mode** — interactive UV seam editing | How seam state survives the pipeline's seam marking and region merge without being overwritten | Edit Mode negative path (section 5 item 2) plus a preservation case where a pinned seam reappears after Unwrap |
-| F4 | **Multi-object batch unwrapping with global texel density preservation** | How texel density is currently computed per object and what "global" means across objects of different scale | A batch run on several objects asserting the density target is met globally, with the measured values recorded |
+| # | Item | Open question to settle first | Verification it would need | Result (recorded 2026-10-25) |
+|---|---|---|---|---|
+| F1 | **UDIM and advanced multi-tile packing** — UDIM grid support and automatic multi-material packing | What `udim.py` does today versus what the UI exposes; whether the native unwrap can target a UDIM grid at all | A pipeline case with more than one tile: loops land in the intended tile, no tile collision, stable across reruns | **Verified headless 2026-10-25.** `pipeline_udim_multi_tile` PASS: 3 tiles (1001, 1002, 1003), 6 faces over 3 material groups, every face inside its assigned tile, no tile collision, determinism drift `0.00e+00` on re-run. |
+| F2 | **Bidirectional interactive live bridge with RizomUV** — desktop/socket handshake resolution | Which side fails to open the link port, and whether the documented launch path can be made to report it; the G2-style headless run saw port 49152 not opened within 180 s | **G2** executed interactively first; the bridge is only "interactive" after a real desktop round trip is logged | **Partial 2026-10-25, F2 not closed.** `pipeline_link_bridge_contract` PASS headless: `unavailable_reason()` non-empty, `prepare()` rejects cleanly with `RuntimeError` when the link module is missing, `_build_steps` produces the expected 6 steps with 5 `Set` (UsePixelUnit True, Scaling.Mode 0), `link_optimize=False` drops `optimize`. The interactive desktop round trip over the live link remains a class (c) human gate, pending. |
+| F3 | **Seam pinning and intelligent preservation in Edit Mode** — interactive UV seam editing | How seam state survives the pipeline's seam marking and region merge without being overwritten | Edit Mode negative path (section 5 item 2) plus a preservation case where a pinned seam reappears after Unwrap | **Verified headless 2026-10-25.** `pipeline_seam_preservation` PASS: 2/2 seams preserved after unwrap, UVs finished. `pipeline_edit_mode_guard` PASS: operator invoked in Edit Mode returns to OBJECT without exceptions, 12 seams marked. |
+| F4 | **Multi-object batch unwrapping with global texel density preservation** | How texel density is currently computed per object and what "global" means across objects of different scale | A batch run on several objects asserting the density target is met globally, with the measured values recorded | **Verified headless 2026-10-25.** `pipeline_global_texel_density` PASS: world_area 6.000 vs 24.000, target 0.041667 (max_area 24.000), density reached 0.0417 on both objects; local non-global densities 0.1085 vs 0.0271, about 4x apart. Implementation: `texel_density.normalize(..., target_density=None)`, `texel_density.world_area()`, `texel_density.global_target_density()`; `operators/batch.py::_init_batch(queue, context=None)` computes `self._global_density`; `operators/native.py` passes it to normalization and skips coverage scaling while it is active. |
 
 Constraints that stay in force for F1–F4:
 

@@ -118,6 +118,7 @@ class NativePipelineMixin:
                     island_analysis=island_analysis,
                     mesh_analysis=state["mesh_analysis"],
                     settings=settings,
+                    target_density=getattr(self, "_global_density", None),
                 )
                 self._report(
                     "INFO" if norm_result.get("ok") else "WARNING",
@@ -242,7 +243,15 @@ class NativePipelineMixin:
             obj.data,
             str(getattr(settings, "uv_layer_name", "SmartUV") or "SmartUV"),
         )
-        if state.get("udim_tiles"):
+        if getattr(self, "_global_density", None):
+            # A global target is already what every object was scaled to;
+            # coverage scaling would pack each one at its own density again.
+            self._report(
+                "INFO",
+                "Coverage scaling skipped: a global texel density target is in use."
+            )
+            cov_ok, cov_msg = True, ""
+        elif state.get("udim_tiles"):
             # Coverage scaling normalises the whole layout into the unit
             # square, which would collapse every tile back onto tile 1001.
             self._report(

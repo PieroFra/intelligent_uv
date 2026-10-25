@@ -80,7 +80,7 @@ from .ui import VIEW3D_PT_IntelligentUV
 bl_info = {
     "name": "Intelligent UV Mapping",
     "author": "Pierfrancesco Diodato",
-    "version": (0, 34, 0),
+    "version": (0, 35, 0),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar (N) > Intelligent UV",
     "description": "Automatic workflow for intelligent UV mapping.",

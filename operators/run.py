@@ -106,7 +106,7 @@ class IntelligentUV_OT_Run(
             self._end_progress(context)
             return {'CANCELLED'}
 
-        self._init_batch(queue)
+        self._init_batch(queue, context)
 
         # An exception escaping here would leave _busy set and grey out the Run
         # button until Blender restarts, so the flag is released on any failure

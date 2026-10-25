@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.35.0 — UDIM tiles verified, seam pinning verified, global texel density across a batch
+
+Three of the four feature items tracked in `ROADMAP.md` section 8.2 (F1, F3,
+F4) now have headless pipeline coverage. F2 is half closed: the bridge
+contract is verified headless, the interactive desktop round trip is not.
+
+**Added**
+
+- Pipeline suite grew from 7 to 12 checks with five new cases:
+  `pipeline_udim_multi_tile`, `pipeline_seam_preservation`,
+  `pipeline_edit_mode_guard`, `pipeline_global_texel_density`,
+  `pipeline_link_bridge_contract`.
+- Global texel density across a batch: `texel_density.normalize(...,
+  target_density=None)`, `texel_density.world_area()` and
+  `texel_density.global_target_density()`; `operators/batch.py::_init_batch(queue,
+  context=None)` computes `self._global_density`, and `operators/native.py`
+  passes it to the normalization and skips coverage scaling while it is active
+  (scaling each object on its own would rescale every object).
+
+**Verified** (headless, Blender 5.2.0 LTS, build hash `fbe6228777e7`)
+
+- F1 UDIM/multi-tile: `pipeline_udim_multi_tile` PASS. 3 tiles (1001, 1002,
+  1003), 6 faces over 3 material groups, every face inside its assigned tile,
+  no tile collision, determinism drift `0.00e+00` on re-run.
+- F3 seam pinning: `pipeline_seam_preservation` PASS (2/2 seams preserved
+  after unwrap, UVs finished) and `pipeline_edit_mode_guard` PASS (operator
+  invoked in Edit Mode returns to OBJECT without exceptions, 12 seams marked).
+- F4 global texel density: `pipeline_global_texel_density` PASS. World area
+  6.000 vs 24.000, target 0.041667 (max_area 24.000), density reached 0.0417
+  on both objects; the local non-global densities were 0.1085 vs 0.0271, about
+  4x apart, which is the spread the global target removes.
+- Suites: pipeline **12/12** (`.opencode/tests/pipeline_out.txt`), smoke
+  **14/14** (`.opencode/tests/test_out.txt`). Gate verdict `VERIFY_OK`
+  recorded for task f134-code-01.
+
+**Known limits**
+
+- F2 live bridge: `pipeline_link_bridge_contract` PASS verifies the contract
+  only: `unavailable_reason()` non-empty, `prepare()` rejects cleanly with
+  `RuntimeError` when the link module is missing, `_build_steps` produces the
+  expected 6 steps with 5 `Set` calls (UsePixelUnit True, Scaling.Mode 0), and
+  `link_optimize=False` drops the `optimize` step. The round trip through the
+  live link in a desktop session is still a class (c) human gate: F2 is not
+  closed.
+- The suites run on primitives and synthetic multi-material setups, not on the
+  gate asset; G1 stays open (`ROADMAP.md` section 3).
+
 ## 0.34.0 — Registration is idempotent; face reads portable; overlap checked per region; author and licence recorded
 
 This is the baseline `bl_info` declares. Two limits apply to this entry, and

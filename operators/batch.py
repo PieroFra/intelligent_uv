@@ -16,6 +16,7 @@ which is why it reads as more machinery than the job seems to need.
 import bpy
 
 from ..validation import ContextGuard
+from .. import texel_density
 
 
 class BatchQueueMixin:
@@ -67,13 +68,14 @@ class BatchQueueMixin:
 
         return unique
 
-    def _init_batch(self, queue):
+    def _init_batch(self, queue, context=None):
         self._queue = queue
         self._queue_index = 0
         self._queue_total = len(queue)
         self._ok_names = []
         self._failed_names = []
         self._failed_reasons = []
+        self._global_density = None
 
         type(self)._busy = True
 
@@ -84,6 +86,25 @@ class BatchQueueMixin:
                 "INFO",
                 f"Batch started for {self._queue_total} objects: {names}{more}."
             )
+
+        # One density for the whole batch: without it every object is
+        # normalized against its own area and the batch comes out uneven.
+        if context is not None and self._queue_total > 1:
+            settings = getattr(
+                getattr(context, "scene", None), "intelligent_uv_settings", None
+            )
+            if settings is not None and bool(
+                getattr(settings, "normalize_texel_density", True)
+            ):
+                result = texel_density.global_target_density(queue)
+                if result.get("ok"):
+                    self._global_density = result["target_density"]
+                    self._report(
+                        "INFO",
+                        "Global texel density target: "
+                        f"{self._global_density:.4f} UV units^2 per world unit^2 "
+                        f"across {result.get('objects', 0)} objects."
+                    )
 
     def _queue_is_finished(self):
         return self._queue_index >= self._queue_total
