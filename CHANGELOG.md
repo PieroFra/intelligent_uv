@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.35.1 - Hardened _EnglishLayout proxy, dedicated Italian UI & Credits test suite, and aligned verification records
+
+**Fixed**
+
+- `_EnglishLayout` (`ui.py`), the translator proxy that keeps the panel in
+  English, now also intercepts `grid_flow`, `column_flow` and `menu_pie` (the
+  row/children factories used by the batch queue and the popup), the six extra
+  text-adding methods (`label`, `text`-style calls across pop operators,
+  warnings, quick guide rows and links), and guards the `icon_only` call paths
+  so no technical term escapes translation on non-English Blender settings.
+
+**Added**
+
+- Pipeline suite: the 13th check `pipeline_english_ui_and_credits` is now a
+  dedicated Italian UI and Credits suite: it draws the main panel and the
+  License & Credits popup on a spy layout with an Italian language set and
+  asserts `translate=False` on every text call.
+- `VERIFICATION.md`: the release verification record for the packaged ZIP
+  (artifact hashes, clean-install results, suite outcomes).
+
+**Changed**
+
+- Verification counts aligned across README, CHANGELOG and VERIFICATION:
+  smoke 14/14, pipeline 13/13, and the UI probe distinguished as
+  86 unique static labels measured with `blf.dimensions` (flagged=0),
+  87 runtime draw operations on the main panel, and 22 runtime draw calls in
+  the License & Credits popup.
+
 ## 0.35.0 - UDIM tiles verified, seam pinning verified, global texel density across a batch, RizomUV bridge verified
 
 All four feature items tracked in `ROADMAP.md` section 8.2 (F1, F2, F3, F4)

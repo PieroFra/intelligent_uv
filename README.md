@@ -3,7 +3,7 @@
 Automated UV unwrapping for Blender: curvature-driven seam planning, island
 merging, texel density normalization, and an optional bridge to RizomUV.
 
-Version 0.35.0 · targets Blender 4.2+ · tested against Blender 5.2 LTS
+Version 0.35.1 · targets Blender 4.2+ · tested against Blender 5.2 LTS
 Author: Pierfrancesco Diodato · License: GPL-3.0-or-later
 
 ---
@@ -48,7 +48,7 @@ Author: Pierfrancesco Diodato · License: GPL-3.0-or-later
 
 ## Installation
 
-Install the release ZIP (`intelligent_uv-0.35.0.zip`, attached to the v0.35.0
+Install the release ZIP (`intelligent_uv-0.35.1.zip`, attached to the v0.35.1
 release on the GitHub releases page) through **Edit > Preferences > Add-ons >
 Install from Disk**, or copy the `intelligent_uv` folder into your Blender
 `scripts/addons` directory. The panel appears in the 3D View sidebar (N) under the
@@ -171,8 +171,10 @@ defaults do not fit.
   (`pipeline_english_ui_and_credits`, which draws the panel and the License &
   Credits popup on a spy layout with an Italian language set and asserts
   `translate=False` on every text call).
-- UI probe: **86 labels measured with `blf.dimensions`, flagged=0** in Italian
-  and English (`.opencode/scripts/run_ui_probe.ps1`).
+- UI probe: **86 unique static labels measured with `blf.dimensions`
+  (flagged=0), 87 runtime draw operations on the main panel and 22 runtime
+  draw calls in the License & Credits popup**, in Italian and English
+  (`.opencode/scripts/run_ui_probe.ps1`).
 - **G2 PASS, 2026-10-23**: manual RizomUV round trip on Suzanne with RizomUV
   2025.0.117, 500/500 faces matched, 1968 loops written.
 - **G3 PASS, 2026-10-23**: clean install lifecycle on a fresh Blender 5.2 LTS

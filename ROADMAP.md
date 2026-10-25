@@ -784,6 +784,21 @@ are registered in §3 and §3.1.
 
 ## Appendix — revision history of this file
 
+**Revision 2026-10-25 (v0.35.1 release)** records the 0.35.1 hardening cycle:
+the `_EnglishLayout` proxy in `ui.py` extended to `grid_flow`, `column_flow`,
+`menu_pie`, six extra text-adding methods and the `icon_only` guard; the
+13th pipeline check `pipeline_english_ui_and_credits` as the dedicated Italian
+UI & Credits suite; the new `VERIFICATION.md` release record; and the aligned
+counts (smoke 14/14, pipeline 13/13, UI probe 86 static labels / 87 panel
+draws / 22 popup draws). The release artifact `dist/intelligent_uv-0.35.1.zip`
+(190228 bytes, SHA-256 `9652686915...47e`) was verified with a clean headless
+install on a factory-startup Blender 5.2 configuration (7 automated steps, 0
+failures), and the secrets/PII audit over `git ls-files` and the full patch
+history returned 0 hits on tracked files with credentials never appearing in
+history.
+
+## Appendix — older entries
+
 **Revision 2026-10-25** closes F2 in section 8.2: the result cell moves from
 "Partial, F2 not closed" to **PASS (desktop + headless contract)**, adding the
 operator's GUI verification of `Auto`, `Live Link` (official `RizomUVLink`
