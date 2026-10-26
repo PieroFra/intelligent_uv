@@ -28,8 +28,11 @@ _esperimenti/
 AGENTS.md
 opencode.json
 
-# Cartella locale OpenCode (agenti, script, skills): ignorata interamente, resta intatta su disco
-/.opencode/
+# Cartella locale OpenCode (agenti, script, skills): ignorata per default, resta intatta su
+# disco. Le suite headless (.opencode/tests/*.py) sono eccezione deliberata: la CI
+# (.github/workflows/ci.yml) le esegue direttamente con --python e deve trovarle nel repo.
+/.opencode/*
+!/.opencode/tests/
 
 # Derivati locali del nucleo deterministico (verdetto, telemetria, lock)
 /.opencode/metrics.jsonl
