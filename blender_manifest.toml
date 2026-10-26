@@ -1,0 +1,27 @@
+schema_version = "1.0.0"
+
+id = "intelligent_uv"
+version = "0.35.1"
+name = "Intelligent UV Mapping"
+tagline = "Shape-clustering and curvature UV unwrapping with UDIM support"
+maintainer = "Pierfrancesco Diodato"
+type = "add-on"
+website = "https://github.com/PieroFra/intelligent_uv"
+
+blender_version_min = "4.2.0"
+
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+
+copyright = [
+  "2026 Pierfrancesco Diodato",
+]
+
+tags = [
+  "UV",
+]
+
+[permissions]
+files = "Save presets and export or import FBX files for UV editing"
+network = "Local TCP connection to RizomUV when Live Link is enabled"
