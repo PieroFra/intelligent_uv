@@ -1,5 +1,10 @@
 # Intelligent UV Mapping: Blender Add-on
 
+[![Blender](https://img.shields.io/badge/Blender-4.2%20LTS%20%E2%80%94%205.2%2B-blueviolet)](https://www.blender.org)
+[![Version](https://img.shields.io/badge/version-0.35.1-brightgreen)](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.35.1)
+[![License](https://img.shields.io/badge/License-GPL--3.0--or--later-blue)](LICENSE)
+[![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/PieroFra/badge.svg)](https://hub.xerj.org/contributors/PieroFra)
+
 Automated UV unwrapping for Blender: curvature-driven seam planning, island
 merging, texel density normalization, and an optional bridge to RizomUV.
 
