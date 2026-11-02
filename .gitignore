@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -17,35 +17,4 @@ dist/
 *.rar
 
 # Output di test e probe (rigenerabili)
-.opencode/tests/*_out*.txt
-.opencode/probe/*.png
 *.log
-
-# Esperimenti locali (non pubblicati)
-_esperimenti/
-
-# Note locali non pubblicate
-AGENTS.md
-opencode.json
-
-# Cartella locale OpenCode (agenti, script, skills): ignorata per default, resta intatta su
-# disco. Eccezioni deliberate, esattamente i file richiesti dalla CI
-# (.github/workflows/ci.yml): le due suite headless e lo script di packaging.
-/.opencode/*
-!/.opencode/tests/
-/.opencode/tests/*
-!/.opencode/tests/smoke_test.py
-!/.opencode/tests/pipeline_test.py
-!/.opencode/scripts/
-/.opencode/scripts/*
-!/.opencode/scripts/package_release.ps1
-
-# Derivati locali del nucleo deterministico (verdetto, telemetria, lock)
-/.opencode/metrics.jsonl
-/.opencode/verdict.txt
-/.opencode/gate.lock
-/.opencode/scratch/
-/.opencode/INDEX.md
-
-# File temporaneo estraneo (esportazione sessione, mai da committare)
-/verifica-delle-istruzioni-in-agents-md.json

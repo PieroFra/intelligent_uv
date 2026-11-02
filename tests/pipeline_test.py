@@ -13,7 +13,7 @@ Non modifica il codice dell'addon: crea solo oggetti di scena e li
 elimina alla fine.
 
 Uso:
-    blender --factory-startup --background --python .opencode/tests/pipeline_test.py
+    blender --factory-startup --background --python tests/pipeline_test.py
 
 Ultima riga dell'output: RISULTATO passati=X falliti=Y totale=N
 """
@@ -25,7 +25,7 @@ import sys
 import types
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))      # .opencode\tests -> .opencode -> radice
+ROOT = os.path.dirname(HERE)      # tests -> radice del repo
 PACKAGE = os.path.basename(ROOT)
 sys.path.insert(0, os.path.dirname(ROOT))
 

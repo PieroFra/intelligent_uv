@@ -8,7 +8,7 @@ impostata su italiano e prova che `_EnglishLayout` (`ui.py`) passi `translate=Fa
 chiamata e inietti il nome RNA inglese nelle property prive di `text=`. Non tocca la pipeline UV.
 
 Uso:
-    blender --factory-startup --background --python .opencode/tests/smoke_test.py
+    blender --factory-startup --background --python tests/smoke_test.py
 
 Ultima riga dell'output: RISULTATO passati=X falliti=Y totale=N
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 from types import MethodType, SimpleNamespace
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))      # .opencode\tests -> .opencode -> radice
+ROOT = os.path.dirname(HERE)      # tests -> radice del repo
 PACKAGE = os.path.basename(ROOT)
 sys.path.insert(0, os.path.dirname(ROOT))
 
@@ -57,7 +57,7 @@ def do_compile():
     broken = []
     for path in sorted(Path(ROOT).rglob("*.py")):
         parts = set(path.relative_to(ROOT).parts)
-        if ".opencode" in parts or "__pycache__" in parts:
+        if {"tests", "scripts"} & parts or "__pycache__" in parts:
             continue
         try:
             with open(path, "r", encoding="utf-8") as handle:

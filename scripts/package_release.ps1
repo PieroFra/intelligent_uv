@@ -27,7 +27,7 @@ $ZipEpoch = [DateTimeOffset]::new(2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
 
 # Solo runtime. Nessun file di sviluppo entra nel pacchetto.
 $ExcludeDirs = @(
-    '.git', '.opencode', '.github', '.idea', '.vscode',
+    '.git', 'tests', 'scripts', '.github', '.idea', '.vscode',
     '__pycache__', '_esperimenti', 'dist', 'venv', '.venv', 'build'
 )
 $ExcludeNames = @(
@@ -121,7 +121,7 @@ function Get-Sha256 {
 # 1. Radice e versione
 # ---------------------------------------------------------------------------
 
-$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$root = Split-Path -Parent $PSScriptRoot
 $initPath = Join-Path $root '__init__.py'
 
 if (-not (Test-Path -LiteralPath $initPath)) { throw "Add-on non trovato: $initPath" }
