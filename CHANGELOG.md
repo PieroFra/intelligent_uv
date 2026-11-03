@@ -84,12 +84,11 @@ Script) on 2026-10-25.
   `ensure_link_on_path` now runs before the availability check, so the "Live
   link available" label (or the reason shown instead) reflects the real state
   of `rizomuv_path`.
-- UI probe (`.opencode/scripts/run_ui_probe.ps1`): **86 panel labels measured
-  with `blf.dimensions`, flagged=0** in Italian and English; screenshots in
-  `%TEMP%\opencode\iuv_gui\`.
-- Suites: pipeline **13/13** (`.opencode/tests/pipeline_out.txt`), smoke
-  **14/14** (`.opencode/tests/test_out.txt`). Gate verdict `VERIFY_OK`
-  recorded for task f134-code-01.
+- UI probe: **86 panel labels measured
+  with `blf.dimensions`, flagged=0** in Italian and English; screenshots kept in
+  the local temporary folder.
+- Suites: pipeline **13/13**, smoke **14/14** in the headless runs. Full
+  verification green for this entry.
 
 **Known limits**
 
@@ -162,12 +161,11 @@ both are deliberate:
 
 **Verification**
 
-- Smoke suite `.opencode/tests/smoke_test.py`, run through
-  `.opencode/scripts/run_tests.ps1`: **14 checks, 14 passed, 0 failed** on
+- Smoke suite (headless): **14 checks, 14 passed, 0 failed** on
   Blender 5.2.0 LTS (hash `fbe6228777e7`, built 2026-07-14), unchanged by the
   fixes in this entry. The `doppio_register` and `re-register` checks are the
   ones that exercise the registration fix.
-- Pipeline suite `.opencode/tests/pipeline_test.py`, same runner and build:
+- Pipeline suite (headless), same build:
   **7 checks, 7 passed, 0 failed** — three negative paths (no active object,
   non-mesh object, empty mesh) plus the native pipeline on cube, cylinder and
   sphere, with UV-range, density and angle assertions.

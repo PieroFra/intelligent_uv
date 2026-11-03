@@ -10,15 +10,15 @@ so instead of answering it.
 
 ## 1. Verified: two development scripts copied from the ACTD project
 
-Two files under `.opencode/skills/blender-bridge/scripts/` are byte-for-byte
-identical to the same-named files in the sibling project `ACTD`
-(`..\ACTD\.opencode\skills\blender-bridge\scripts\`), which is distributed under
-GPL-3.0-or-later.
+Two files, `blender_bridge.py` and `bridge_call.py`, are byte-for-byte
+identical to the same-named development files kept in the sibling project `ACTD`,
+which is distributed under GPL-3.0-or-later. They live only in the untracked
+local working tree and are not distributed with this add-on.
 
 | File in this repository | Size | SHA-256 |
 |---|---|---|
-| `.opencode/skills/blender-bridge/scripts/blender_bridge.py` | 3702 bytes | `DC00EA2A9F2EAB4D61DB9E3A79326BDE4409C7D9692373EBD9B4779462EC283D` |
-| `.opencode/skills/blender-bridge/scripts/bridge_call.py` | 1658 bytes | `559DB13426A5FA70888E7BB2D89320ED247DA4BD42037B952A702FE3688207C6` |
+| `blender_bridge.py` | 3702 bytes | `DC00EA2A9F2EAB4D61DB9E3A79326BDE4409C7D9692373EBD9B4779462EC283D` |
+| `bridge_call.py` | 1658 bytes | `559DB13426A5FA70888E7BB2D89320ED247DA4BD42037B952A702FE3688207C6` |
 
 The pairs were hashed on 2026-10-22 with SHA-256; for each file the digest of
 this copy and the digest of the copy in `ACTD` are equal, and so are the byte
@@ -34,13 +34,13 @@ What these two files are:
 
 Where they are used, and what that implies:
 
-- They are development tooling. They are read by the `blender-bridge` skill in
-  `.opencode/skills/`, which an agent may load to inspect a live Blender UI.
+- They are development tooling. They are used by local tooling that inspects a
+  live Blender UI.
 - They are **not** part of the Blender add-on. Nothing in the package imports
   them, and the add-on cannot reach them at runtime.
-- `.opencode/` is excluded from the release archive, together with `.git`,
-  `__pycache__` and the local test files, so these scripts are not distributed
-  in a release of the add-on.
+- That untracked tooling folder is excluded from the release archive, together
+  with `.git`, `__pycache__` and the local test files, so these scripts are not
+  distributed in a release of the add-on.
 - The origin project is stated as GPL-3.0-or-later and this project is stated
   as GPL-3.0-or-later, so the two files are carried here under the same terms
   as their origin. The licence text is in [LICENSE](LICENSE).
@@ -99,9 +99,9 @@ the repository can be used to prove.
 - No third-party Python package is vendored or redistributed. The package imports
   only `bpy`, `bmesh`, `mathutils` and `numpy`, and `numpy` is bundled with
   Blender; there is no `requirements.txt`, wheel, `.pyd` or `.dll` here.
-- The only file in `.opencode/` whose external provenance is recorded is the pair
-  of ACTD scripts in section 1. Everything else in that folder is development-only
-  and is not part of the distributed add-on.
+- The only local development files whose external provenance is recorded is the pair
+  of ACTD scripts in section 1. Everything else in the untracked tooling folder is
+  development-only and is not part of the distributed add-on.
 
 **Not established.** The checks above are an inventory, not a legal audit. They
 cannot show that the owner holds copyright in every line, cannot detect material

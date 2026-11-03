@@ -4,6 +4,7 @@
 [![Version](https://img.shields.io/badge/version-0.35.1-brightgreen)](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.35.1)
 [![License](https://img.shields.io/badge/License-GPL--3.0--or--later-blue)](LICENSE)
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/PieroFra/badge.svg)](https://hub.xerj.org/contributors/PieroFra)
+[![Downloads](https://img.shields.io/github/downloads/PieroFra/intelligent_uv/total?label=downloads)](https://github.com/PieroFra/intelligent_uv/releases)
 
 Automated UV unwrapping for Blender: curvature-driven seam planning, island
 merging, texel density normalization, and an optional bridge to RizomUV.
@@ -165,11 +166,11 @@ defaults do not fit.
 
 ## Verification & Status
 
-- Smoke suite: **14/14**, 0 failed on Blender 5.2.0 LTS
-  (`.opencode/tests/test_out.txt`) over import, registration including a second
+- Smoke suite: **14/14**, 0 failed on Blender 5.2.0 LTS (headless log) over
+  import, registration including a second
   `register()` call in the same session, the panel, the operators, the
   properties exposed in the UI and unregister.
-- Pipeline suite: **13/13**, 0 failed (`.opencode/tests/pipeline_out.txt`):
+- Pipeline suite: **13/13**, 0 failed (headless log):
   the native pipeline on primitives, plus UDIM multi-tile packing, seam
   preservation, the Edit Mode guard, global texel density across a batch, the
   RizomUV link bridge contract and the English-lock UI check
@@ -179,7 +180,7 @@ defaults do not fit.
 - UI probe: **86 unique static labels measured with `blf.dimensions`
   (flagged=0), 87 runtime draw operations on the main panel and 22 runtime
   draw calls in the License & Credits popup**, in Italian and English
-  (`.opencode/scripts/run_ui_probe.ps1`).
+  (deterministic layout probe).
 - **G2 PASS, 2026-10-23**: manual RizomUV round trip on Suzanne with RizomUV
   2025.0.117, 500/500 faces matched, 1968 loops written.
 - **G3 PASS, 2026-10-23**: clean install lifecycle on a fresh Blender 5.2 LTS
@@ -298,12 +299,12 @@ GPL-3.0 text and the local README.md, CHANGELOG.md and LICENSE files.
 
 What comes from elsewhere, and what does not:
 
-- **Two development scripts** under `.opencode/skills/blender-bridge/scripts/`
-  (`blender_bridge.py`, `bridge_call.py`) are byte-for-byte identical to the
-  same-named files in the sibling `ACTD` project and are carried here under the
-  same GPL-3.0-or-later terms. They are tooling for agents working on this
-  repository, not part of the add-on: nothing in the package imports them, and
-  `.opencode/` is excluded from the release archive.
+- **Two local development scripts** (`blender_bridge.py`, `bridge_call.py`) are
+  byte-for-byte identical to the same-named files in the sibling `ACTD` project
+  and are carried here under the same GPL-3.0-or-later terms. They are tooling
+  used while working on this repository, not part of the add-on: they exist only
+  in the untracked local working tree, nothing in the package imports them, and
+  they are excluded from the release archive.
 - **RizomUVLink** (MIT, Rizom-Lab) is **not vendored**. No copy of it, no wheel
   and no binary is in this repository. `rizomuv_link.py` imports it lazily from
   the RizomUV installation on your machine, where the MIT notice travels with it;
@@ -317,3 +318,5 @@ What comes from elsewhere, and what does not:
 (sizes, SHA-256 digests, usage paths), separates what the owner declares from
 what an inspection of this tree can verify, and names what the audit does not
 establish. It is a factual record, not a legal opinion.
+
+Developed with AI assistance under the author's direction, review, and responsibility.

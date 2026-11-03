@@ -21,7 +21,7 @@ as another.
 
 | Class | Meaning | Where it lives |
 |---|---|---|
-| **(a) Verified** | Read from this working tree, the smoke log, `git`, `THIRD_PARTY.md` or `AGENTS.md` | Sections 1 and 3 |
+| **(a) Verified** | Read from this working tree, the smoke log or `git` | Sections 1 and 3 |
 | **(b) Reported, not reproduced** | Numbers or bug fixes supplied by the owner from an external report; no benchmark, test or log in this repository backs them | Section 2, to be settled by the gate in Phase 1 |
 | **(c) Manual gates** | Checks no headless run in this repository can perform; a human executes them on a named build, asset or program, and the log is kept | Section 3 |
 
@@ -71,20 +71,20 @@ Everything below is read from the repository, not from earlier plans.
 | Version | `bl_info` declares **0.34.0**, minimum Blender **4.2.0**, category `UV` | `__init__.py` |
 | Author | `bl_info["author"]` is still `"Your Name"` | `__init__.py` |
 | Size | **41** Python files (**31** root modules + **10** in `operators/`), **11,715** lines | file count |
-| Smoke test | **14 passed, 0 failed, 14 total** on Blender **5.2.0 LTS**, build hash `fbe6228777e7`, built 2026-07-14; asserts 17 classes, 14 operators, 65 properties | `.opencode/tests/test_out.txt` |
-| Pipeline test | **7 passed, 0 failed, 7 total** on the same build: three negative paths (no active object, non-mesh object, empty mesh) and the native pipeline on cube, cylinder and sphere, with UV range/density/angle checks | `.opencode/tests/pipeline_out.txt` |
+| Smoke test | **14 passed, 0 failed, 14 total** on Blender **5.2.0 LTS**, build hash `fbe6228777e7`, built 2026-07-14; asserts 17 classes, 14 operators, 65 properties | smoke log |
+| Pipeline test | **7 passed, 0 failed, 7 total** on the same build: three negative paths (no active object, non-mesh object, empty mesh) and the native pipeline on cube, cylinder and sphere, with UV range/density/angle checks | pipeline log |
 | Register risk | The log includes passing `doppio_register` and `re-register` checks; the guard tracks what it registered and snapshots scene settings. `register()` now reads scenes through `getattr` so it survives Blender's `RestrictBlend` sandbox | smoke log, `__init__.py` |
 | Test scope | The smoke test covers registration, panel, operators, properties and unregister; the pipeline test covers the native pipeline on **primitives only**. Neither runs on the gate asset, and neither executes the external/RizomUV path | `smoke_test.py`, `pipeline_test.py` |
 | Repository | Branch `main`, one commit (`e357426 import iniziale Intelligent UV Mapping 0.34.0`), **no remote configured** | `git log`, `git remote` |
 | Working tree | `README.md`, `ROADMAP.md`, `__init__.py` and the smoke test are modified but uncommitted; the two UI-probe scripts, `LICENSE` and `THIRD_PARTY.md` are untracked | `git status` |
 | Distribution files | `LICENSE` (GPL-3.0-or-later) and `THIRD_PARTY.md` exist but are **not committed**; no `.github/`, no `blender_manifest.toml`, no packaging script | directory listing, `git status` |
-| Documentation drift | `CHANGELOG.md` now has a **0.34.0** entry, and neither the README nor this file cites `tests/test_core.py` any more: both point at `.opencode/tests/smoke_test.py`. The 0.16.0 version drift in this file is fixed by this revision | `CHANGELOG.md`, `README.md`, grep over `*.md` |
+| Documentation drift | `CHANGELOG.md` now has a **0.34.0** entry, and neither the README nor this file cites `tests/test_core.py` any more: both point at the smoke suite. The 0.16.0 version drift in this file is fixed by this revision | `CHANGELOG.md`, `README.md`, grep over `*.md` |
 | User flow in the panel | Nine primary controls, everything else behind **Advanced**; the README documents Check Mesh and the native Unwrap as the normal path | `README.md`, `ui.py` |
 | Relevant operators | `intelligent_uv.check` ("Check Mesh"), `intelligent_uv.run` ("Run Intelligent UV"), `intelligent_uv.export_fbx` ("Export UV to FBX"), `intelligent_uv.import_fbx` ("Import UV from FBX"), `intelligent_uv.import_last` ("Import Last") | `operators/check.py`, `operators/run.py`, `manual_io.py` |
-| RizomUV | Optional, Windows-only, imported lazily. README records a manual round trip against **2025.0.117** and the automated bridge (Auto, Live Link, Lua Script) behind the **Automated RizomUV** toggle, off by default; all three modes were verified by the operator in a desktop session on 2026-10-25 (recorded in section 8.2) | `README.md`, `AGENTS.md`, bridge modules |
+| RizomUV | Optional, Windows-only, imported lazily. README records a manual round trip against **2025.0.117** and the automated bridge (Auto, Live Link, Lua Script) behind the **Automated RizomUV** toggle, off by default; all three modes were verified by the operator in a desktop session on 2026-10-25 (recorded in section 8.2) | `README.md`, bridge modules |
 | RizomUVLink | MIT, Rizom-Lab, **not vendored**: no package, wheel or binary in the tree; imported at runtime from the RizomUV install | `THIRD_PARTY.md` §2 |
-| Licence audit | Two development scripts under `.opencode/` are byte-identical to the sibling `ACTD` copies (SHA-256 recorded). No vendored Python package. No copyright/SPDX headers found in the add-on. Explicitly **not a legal audit** and no proof of title | `THIRD_PARTY.md` |
-| Internal notes | `AGENTS.md` and `opencode.json` are git-ignored; `AGENTS.md` now matches the smoke log (**14** checks, `doppio_register` listed as verified) and declares the **0.34.0** version | `.gitignore`, `AGENTS.md`, smoke log |
+| Licence audit | Two local development scripts (untracked, not distributed) are byte-identical to the sibling `ACTD` copies (SHA-256 recorded). No vendored Python package. No copyright/SPDX headers found in the add-on. Explicitly **not a legal audit** and no proof of title | `THIRD_PARTY.md` |
+| Internal notes | The local development notes are git-ignored and match the smoke log (**14** checks, `doppio_register` listed as verified); they declare the **0.34.0** version | `.gitignore`, smoke log |
 
 What this means:
 
@@ -158,7 +158,7 @@ a fresh configuration), **Blender restarted afterwards**, then Check Mesh →
 Unwrap. The exploratory runs recorded under `_esperimenti/` do not satisfy it:
 they were headless (`--background`, factory startup), with the add-on registered
 in-process from source instead of installed, no restart, and no interactive
-product session. Per `AGENTS.md` §3 they are **class non-gate**: they may inform
+product session. By project rule they are **class non-gate**: they may inform
 the procedure and suggest where to look, but they are not G1 evidence and none of
 their numbers may be cited as a gate result.
 
@@ -186,8 +186,8 @@ branch of G3 remain open.
 
 | Evidence | Result as recorded | Artifact | Class |
 |---|---|---|---|
-| Smoke suite | **14/14**, 0 failed — Blender 5.2.0 LTS, build `fbe6228777e7` (2026-07-14) | `.opencode/tests/test_out.txt` | (a) |
-| Pipeline suite | **7/7**, 0 failed — same build; 3 negative paths + native pipeline on cube/cylinder/sphere | `.opencode/tests/pipeline_out.txt` | (a) |
+| Smoke suite | **14/14**, 0 failed — Blender 5.2.0 LTS, build `fbe6228777e7` (2026-07-14) | smoke log | (a) |
+| Pipeline suite | **7/7**, 0 failed — same build; 3 negative paths + native pipeline on cube/cylinder/sphere | pipeline log | (a) |
 | G1-style headless run | 2026-10-23, 19,985 faces (target matched), Check Mesh **0 blocking / 1 warning / 1 note**, Unwrap `FINISHED` twice at **2.70 s** and **2.58 s**, 0 loops outside the 0–1 tile, 0 collapsed UV faces | `_esperimenti/gates/g1_run/report.md`, `metrics.json`, `console.log` | non-gate |
 | G3-style headless run | 2026-10-23, **FAIL at step 5 (Enable)**: `AttributeError: '_RestrictData' object has no attribute 'scenes'`, ZIP sha256 `5860c473…` | `_esperimenti/gates/g3_run/g3_report.md`, `g3_log.txt` | non-gate |
 | G2-style headless run | 2026-10-23, export `FINISHED` (15,788 B FBX), RizomUV live link failed (link port 49152 not opened within 180 s), external edit **simulated inside Blender**, import `FINISHED` with 6/6 faces and 24 loops matched on layer `SmartUV`, 0 unmatched | `_esperimenti/gates/g2_run/runs/20261023-181059/log.txt`, `results.json` | non-gate |
@@ -252,7 +252,7 @@ first written for no longer exists.
    download and hash check, file, object, buttons pressed, values recorded. It
    must be executable by someone else without asking questions.
 2. Build the installable ZIP from the current tree with
-   `.opencode\scripts\package_release.ps1` — output in `dist\`, which is
+   the local packaging script — output in `dist\`, which is
    **gitignored**, so rebuild it after the documentation commits and immediately
    before the gate. Then install 0.34.0 the documented way (ZIP from Preferences,
    fresh configuration) and **restart Blender**. Record the build hash and add-on
@@ -343,7 +343,7 @@ author, and the licence must not be mistaken for a title audit.
    title over every line, and the source audit in `THIRD_PARTY.md` is an
    inventory with stated limits, not a legal opinion.
 3. Re-verify the two recorded SHA-256 digests before committing. If either
-   `.opencode/skills/blender-bridge/scripts/` file was edited, the identity claim
+   local bridge script was edited, the identity claim
    stops applying and the table must change.
 4. Replace `"Your Name"` with the real author and add repository/support URLs
    where Blender and GitHub expect them.
@@ -351,10 +351,10 @@ author, and the licence must not be mistaken for a title audit.
    commits; do not mix them with documentation or packaging changes.
 6. Decide repository visibility from the first push. **It stays private for
    now**, and the owner has chosen a free showcase; the remote is added when
-   that changes. Confirm that `AGENTS.md`, `opencode.json`, `__pycache__/` and
+   that changes. Confirm that the development notes, the agent configuration, `__pycache__/` and
    test output stay ignored.
-7. `AGENTS.md` is already aligned with the log (**14** checks, `doppio_register`
-   verified, baseline 0.34.0); keep it aligned whenever the suite changes.
+7. The development notes are already aligned with the log (**14** checks, `doppio_register`
+   verified, baseline 0.34.0); keep them aligned whenever the suite changes.
 
 **Done when**
 
@@ -391,8 +391,8 @@ same requirements.
 
 **Outcome (2026-10-22)**
 
-The research in step 1 was executed and recorded in
-`.opencode/notes/manifest_research_2026-10-22.md` — access date **2026-10-22**,
+The research in step 1 was executed and recorded in a dated local note
+(`manifest_research_2026-10-22`) — access date **2026-10-22**,
 nine manual pages (`gs42`/`gs52`, `addons42`/`addons52`, `lic42`/`lic52`,
 `pref42`/`pref52`, `prefext52`). The note is internal and non-gate: its
 "Documented facts" section is quoted from those pages, its "Recommendation"
@@ -424,7 +424,7 @@ conversion.
 **Done when**
 
 - [x] A dated note states what the current documentation requires, with sources
-  — `.opencode/notes/manifest_research_2026-10-22.md`, access date 2026-10-22.
+  — local note `manifest_research_2026-10-22`, access date 2026-10-22.
 - [x] The manifest decision is recorded, with its reason — legacy ZIP without
   manifest; the manifest is deferred to a possible Extensions publication.
 - [ ] Any manifest created agrees with `bl_info` on version, author and minimum
@@ -441,8 +441,8 @@ and the restart requirement is part of its contract.
 
 1. Add a repeatable packaging step that stages the add-on as `intelligent_uv/`
    with `__init__.py` at its root.
-2. Exclude development files: `.git/`, `.opencode/`, `__pycache__/`, `*.pyc`,
-   `AGENTS.md`, `opencode.json`, local test output, screenshots, gate logs.
+2. Exclude development files: `.git/`, `__pycache__/`, `*.pyc`, development
+   notes and agent configuration, local test output, screenshots, gate logs.
 3. Include `LICENSE`, `README.md`, `CHANGELOG.md` and `THIRD_PARTY.md`; the
    README and the licence both reference the last one, so it must ship.
 4. Produce a versioned ZIP whose contents are listable and reproducible, plus a
@@ -554,7 +554,7 @@ phase follows the first release, not precedes it.
 
 1. Add a GitHub Actions workflow on a Windows runner that downloads pinned
    Blender builds (4.2 LTS and 5.2 LTS) and runs the headless suite.
-2. Upload `.opencode/tests/test_out.txt` as an artifact so a failure is
+2. Upload the smoke test log as an artifact so a failure is
    diagnosable without rerunning locally.
 3. Add a documentation-consistency job: `bl_info` version equals README version
    and the top changelog entry; no reference to a missing file; every version
@@ -582,8 +582,8 @@ used to claim quality before the gate passes.
    marking → native unwrap → island extraction → texel density → distortion, and
    assert invariants: no zero-area islands, all UV loops inside the 0–1 tile, no
    reported overlaps, seam read-back matches the plan.
-   **Recorded:** `.opencode/tests/pipeline_test.py`, 7 checks, 7/7 on 5.2.0 LTS
-   (`.opencode/tests/pipeline_out.txt`). Still open: the same invariants on the
+   **Recorded:** the headless pipeline suite, 7 checks, 7/7 on 5.2.0 LTS
+   (pipeline log). Still open: the same invariants on the
    gate asset, and coverage of the external path.
 2. **Negative paths.** No active object, non-mesh object, Edit Mode, missing UV
    layer, degenerate mesh. Each must fail with a reported reason, not a crash or
@@ -621,8 +621,8 @@ used to claim quality before the gate passes.
 - **No guarantee for Blender versions outside the test log.** The code targets
   4.2+, but only builds actually exercised by the suite or the gate may be called
   verified.
-- **No developer files in the release ZIP**, and no publishing of `AGENTS.md`,
-  `opencode.json`, agent configuration or gate logs.
+- **No developer files in the release ZIP**, and no publishing of development
+  notes, agent configuration or verification logs.
 - **A passing smoke test is not evidence for the pipeline.** No release note may
   imply otherwise.
 - **No performance claim without a rerunnable log.** B1–B4 are class (b) until
@@ -641,7 +641,7 @@ Known practical constraints:
   override it.
 - The system `python` is a Microsoft Store stub; project tooling must use
   Blender's bundled interpreter.
-- `.opencode/tests/test_out.txt` is git-ignored, so CI must upload it explicitly.
+- The local test log is git-ignored, so CI must upload it explicitly.
 - The repository history currently consists of a single import commit; tags and
   release notes must carry the release history from here on.
 - The version labels 0.33.0 and 0.34.0 come from the report described in

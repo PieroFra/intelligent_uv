@@ -204,9 +204,9 @@ reload instead of swallowing it.
 
 ## Verification
 
-Automated headless suites: `.opencode/tests/smoke_test.py` (14 checks:
+Automated headless suites: the smoke suite (14 checks:
 registration, panel, operators, properties, unregister) and
-`.opencode/tests/pipeline_test.py` (13 checks: negative paths, native unwrap on
+the pipeline suite (13 checks: negative paths, native unwrap on
 primitives, UDIM tiling, seam preservation, Edit Mode guard, global texel
 density, bridge contract, English UI and credits). The RizomUV round trip is
 not verified headlessly: it is closed in interactive desktop sessions, recorded

@@ -15,7 +15,7 @@ each one names its source.
 | Hash check | `Get-FileHash -Algorithm SHA256` on the ZIP equals the value in `dist/intelligent_uv-0.35.1.sha256` |
 | File list | `dist/intelligent_uv-0.35.1.files.txt` (per-file SHA-256 and byte size, reproducible source for the package contents) |
 
-The ZIP is produced by `.opencode/scripts/package_release.ps1` with fixed entry
+The ZIP is produced by the local packaging script with fixed entry
 timestamps, so the same tree packages to the same SHA-256. The script prints
 `PACKAGE versione=0.35.1 file=45 py=41 docs=4` and the hash above. The `dist/`
 directory is gitignored on purpose: no binary artifacts are versioned in the
@@ -28,7 +28,7 @@ timestamp, not a host name.
 
 ## Automated Headless Suites (Blender 5.2.0 LTS, build `fbe6228777e7`)
 
-**Smoke suite** (`.opencode/tests/test_out.txt`):
+**Smoke suite** (headless log):
 
 ```
 RISULTATO passati=14 falliti=0 totale=14
@@ -37,7 +37,7 @@ RISULTATO passati=14 falliti=0 totale=14
 14 checks: import, registration, double `register()`, panel class and category,
 all operators, all UI-exposed properties, unregister.
 
-**Pipeline suite** (`.opencode/tests/pipeline_out.txt`):
+**Pipeline suite** (headless log):
 
 ```
 RISULTATO passati=13 falliti=0 totale=13
@@ -87,8 +87,8 @@ count:
 
 Blender 5.2.0 LTS launched with `--factory-startup --background` and
 `BLENDER_USER_CONFIG` / `BLENDER_USER_SCRIPTS` pointed at a brand new
-`%TEMP%/opencode/clean_0351/` tree, config and scripts both empty. The one-shot
-verification script (`%TEMP%/opencode/clean_0351_install.py`, kept for audit)
+`<temp>/clean_0351/` tree, config and scripts both empty. The one-shot
+verification script (`<temp>/clean_0351_install.py`, kept for audit)
 executed the whole lifecycle against `dist/intelligent_uv-0.35.1.zip`
 (SHA-256 `9652686915...47e`):
 

@@ -18,3 +18,9 @@ dist/
 
 # Output di test e probe (rigenerabili)
 *.log
+
+# Note e configurazione locali (non pubbliche)
+AGENTS.md
+opencode.json
+.opencode/
+PUBLISHING_PLAN.md
