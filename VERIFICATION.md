@@ -162,7 +162,7 @@ Info: UVs imported from G2TestCube_import.fbx onto 'G2TestCube' - layer 'SmartUV
 ```
 
 This is the real console line of the round trip with RizomUV 2025.0.117 on
-`G2TestCube`, recorded at `_esperimenti/gates/g2_run/gui_3/stdout.txt:78`
+`G2TestCube`, recorded at line 78 of the local G2 verification script log
 (the dash is again the same console encoding artifact).
 
 ```

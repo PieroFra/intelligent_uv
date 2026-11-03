@@ -147,15 +147,16 @@ Poly Haven model **`bolt_action_rifle_7_62`** (author Mateusz Sadek, CC0,
 <https://polyhaven.com/a/bolt_action_rifle_7_62>) as the gate asset. The gate is
 executed on that asset **re-downloaded from the source above**, not on a local
 copy of unknown provenance, and the download is hash-verified file by file
-exactly as recorded in `_esperimenti/FONTE.md` (SHA-256 table for the 1K glTF
-set). That file is read-only input for this purpose: nothing inside
-`_esperimenti/` is modified by a gate run. Source URL, download date and hashes
-belong in the gate log so a third party can rebuild the same mesh.
+exactly as recorded in the local hash table kept with the local test scripts
+(SHA-256 table for the 1K glTF set). That table is read-only input for this
+purpose: no local verification script modifies it during a gate run. Source
+URL, download date and hashes belong in the gate log so a third party can
+rebuild the same mesh.
 
 **G1 requires a real install and a restart.** The gate is an interactive session
 on Blender with the add-on installed the documented way (ZIP from Preferences on
 a fresh configuration), **Blender restarted afterwards**, then Check Mesh →
-Unwrap. The exploratory runs recorded under `_esperimenti/` do not satisfy it:
+Unwrap. The exploratory runs recorded by the local verification scripts do not satisfy it:
 they were headless (`--background`, factory startup), with the add-on registered
 in-process from source instead of installed, no restart, and no interactive
 product session. By project rule they are **class non-gate**: they may inform
@@ -188,9 +189,9 @@ branch of G3 remain open.
 |---|---|---|---|
 | Smoke suite | **14/14**, 0 failed — Blender 5.2.0 LTS, build `fbe6228777e7` (2026-07-14) | smoke log | (a) |
 | Pipeline suite | **7/7**, 0 failed — same build; 3 negative paths + native pipeline on cube/cylinder/sphere | pipeline log | (a) |
-| G1-style headless run | 2026-10-23, 19,985 faces (target matched), Check Mesh **0 blocking / 1 warning / 1 note**, Unwrap `FINISHED` twice at **2.70 s** and **2.58 s**, 0 loops outside the 0–1 tile, 0 collapsed UV faces | `_esperimenti/gates/g1_run/report.md`, `metrics.json`, `console.log` | non-gate |
-| G3-style headless run | 2026-10-23, **FAIL at step 5 (Enable)**: `AttributeError: '_RestrictData' object has no attribute 'scenes'`, ZIP sha256 `5860c473…` | `_esperimenti/gates/g3_run/g3_report.md`, `g3_log.txt` | non-gate |
-| G2-style headless run | 2026-10-23, export `FINISHED` (15,788 B FBX), RizomUV live link failed (link port 49152 not opened within 180 s), external edit **simulated inside Blender**, import `FINISHED` with 6/6 faces and 24 loops matched on layer `SmartUV`, 0 unmatched | `_esperimenti/gates/g2_run/runs/20261023-181059/log.txt`, `results.json` | non-gate |
+| G1-style headless run | 2026-10-23, 19,985 faces (target matched), Check Mesh **0 blocking / 1 warning / 1 note**, Unwrap `FINISHED` twice at **2.70 s** and **2.58 s**, 0 loops outside the 0–1 tile, 0 collapsed UV faces | local headless run: report, `metrics.json`, console log | non-gate |
+| G3-style headless run | 2026-10-23, **FAIL at step 5 (Enable)**: `AttributeError: '_RestrictData' object has no attribute 'scenes'`, ZIP sha256 `5860c473…` | local headless run: report and log | non-gate |
+| G2-style headless run | 2026-10-23, export `FINISHED` (15,788 B FBX), RizomUV live link failed (link port 49152 not opened within 180 s), external edit **simulated inside Blender**, import `FINISHED` with 6/6 faces and 24 loops matched on layer `SmartUV`, 0 unmatched | local headless run: log and `results.json` | non-gate |
 | G2 manual round trip on Suzanne (operator, Blender GUI + RizomUV) | **G2 PASS — 2026-10-23 — RizomUV 2025.0.117 — match 500/500.** Export & Open → RizomUV opened on `Suzanne_uv.fbx` → unfold + pack in RizomUV 2025.0.117.g4c8bab02 → save → Import UV from FBX. Console verbatim: `UVs imported from Suzanne_uv.fbx onto 'Suzanne' — layer 'SmartUV', 500/500 faces matched, 1968 loops written.` Match 100%, backup layer `SmartUV_backup` created; the em dash mangled in the console line is encoding-only, cosmetic | Operator console transcription of 2026-10-23, kept with the release per the §3 evidence rule | (c) |
 | G3 manual install lifecycle (operator, Blender GUI) | **G3 PASS — 2026-10-23 — Blender 5.2.0 LTS (fbe6228777e7) — ZIP sha256 df81d098...93a1.** Full ZIP sha256 `DF81D09823BE74C512F816E733F02C09516617C7ADE9D9C533CD77EF5CC493A1`; clean install on a fresh config, Intelligent UV panel populated, Check Mesh verbatim: `Mesh is clean: nothing found that would spoil the unwrap.`; disable, re-enable, restart, enable, remove — lifecycle OK, no traceback at any step. Blender 4.2 LTS branch: NOT EXECUTED (4.2 LTS absent on this machine) | Operator console transcription of 2026-10-23, kept with the release per the §3 evidence rule | (c) |
 
@@ -258,7 +259,7 @@ first written for no longer exists.
    fresh configuration) and **restart Blender**. Record the build hash and add-on
    version; a run without the install and the restart does not satisfy the gate.
 3. Re-download the gate asset from <https://polyhaven.com/a/bolt_action_rifle_7_62>
-   and verify every file's hash against the table in `_esperimenti/FONTE.md`, then
+   and verify every file's hash against the table kept with the local test scripts, then
    run **Check Mesh** on it. Keep the full report, including blockers, warnings
    and the counts it prints. If it blocks, record why and stop; that is a gate
    failure, not a reason to work around the check.

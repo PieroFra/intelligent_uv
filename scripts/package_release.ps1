@@ -28,10 +28,10 @@ $ZipEpoch = [DateTimeOffset]::new(2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
 # Solo runtime. Nessun file di sviluppo entra nel pacchetto.
 $ExcludeDirs = @(
     '.git', 'tests', 'scripts', '.github', '.idea', '.vscode',
-    '__pycache__', '_esperimenti', 'dist', 'venv', '.venv', 'build'
+    '__pycache__', 'dist', 'venv', '.venv', 'build'
 )
 $ExcludeNames = @(
-    'agents.md', 'opencode.json', 'roadmap.md', '.gitignore', '.gitattributes',
+    'roadmap.md', '.gitignore', '.gitattributes',
     'thumbs.db', 'desktop.ini'
 )
 $ExcludeExt = @(
@@ -164,7 +164,7 @@ if ($selected.Count -eq 0) { throw 'Nessun file selezionato: il packaging non ha
 # ---------------------------------------------------------------------------
 
 $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-$stagingRoot = Join-Path ([IO.Path]::GetTempPath()) ("opencode\iuv_pkg\{0}_{1}" -f $stamp, [guid]::NewGuid().ToString('N').Substring(0, 8))
+$stagingRoot = Join-Path ([IO.Path]::GetTempPath()) ("iuv_pkg\{0}_{1}" -f $stamp, [guid]::NewGuid().ToString('N').Substring(0, 8))
 $pkgDir = Join-Path $stagingRoot 'intelligent_uv'
 
 try {
