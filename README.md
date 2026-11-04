@@ -12,6 +12,12 @@ merging, texel density normalization, and an optional bridge to RizomUV.
 Version 0.35.1 · targets Blender 4.2+ · tested against Blender 5.2 LTS
 Author: Pierfrancesco Diodato · License: GPL-3.0-or-later
 
+## Demo
+
+![Intelligent UV demo](docs/media/intelligent_uv_demo_v0.35.1.gif)
+
+[Watch the 1080p 60fps MP4 showcase](https://raw.githubusercontent.com/PieroFra/intelligent_uv/main/docs/media/intelligent_uv_demo_v0.35.1.mp4)
+
 ---
 
 ## What It Does
