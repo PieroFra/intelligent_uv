@@ -320,3 +320,11 @@ what an inspection of this tree can verify, and names what the audit does not
 establish. It is a factual record, not a legal opinion.
 
 Developed with AI assistance under the author's direction, review, and responsibility.
+
+## Known Limitations / Compatibility
+
+This addon targets Blender 4.2 and newer, with tests confirmed on Blender 5.2 LTS (Windows) and 4.2 in CI. The optional RizomUV integration relies on Windows-only Live Link and Lua Script features. For cross-platform compatibility, use the manual Export/Import workflow, which requires no external libraries.
+
+## Credits / Support / Report a Bug
+
+Authored by Pierfrancesco Diodato and licensed under GPL-3.0-or-later. For bug reports or feature requests, use GitHub Issues at https://github.com/PieroFra/intelligent_uv/issues. AI assistance is available for guidance, but final review and responsibility remain with the author. Please open issues with clear reproduction steps.

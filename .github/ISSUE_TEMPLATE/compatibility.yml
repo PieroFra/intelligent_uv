@@ -1,0 +1,61 @@
+name: Segnalazione compatibilità
+about: Segnala problemi di compatibilità con una versione di Blender o un sistema operativo
+title: '[COMPAT] '
+labels: [compatibility]
+assignees: []
+
+body:
+  - type: dropdown
+    id: blender-version
+    attributes:
+      label: Versione Blender
+      description: Versione di Blender su cui hai testato l'addon
+      options:
+        - 4.2 LTS
+        - 4.3
+        - 4.4
+        - 4.5
+        - 4.6
+        - 4.7
+        - 5.0
+        - 5.1
+        - 5.2
+        - 5.2+ (versioni future / nightly)
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Sistema operativo
+      description: Sistema operativo della macchina
+      options:
+        - Windows
+        - macOS
+        - Linux
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: addon-installed
+    attributes:
+      label: Addon installato
+      description: L'addon Intelligent UV Mapping risulta installato e attivato in Blender?
+      options:
+        - "sì"
+        - no
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrizione
+      description: Descrivi la configurazione, il comportamento osservato e quello atteso
+      placeholder: Descrivi il problema di compatibilità riscontrato
+      render: markdown
+    validations:
+      required: true
