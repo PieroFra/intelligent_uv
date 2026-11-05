@@ -8,6 +8,7 @@ Headless bridge to the external RizomUV engine.
 import os
 import subprocess
 import tempfile
+import uuid
 
 import bpy
 
@@ -742,14 +743,15 @@ class RizomUVBridge:
         safe_name = "".join(
             c for c in obj.name if c.isalnum() or c in ("_", "-")
         ) or "object"
+        run_token = uuid.uuid4().hex[:12]
 
         ctx = {
             "obj": obj,
             "rz_path": rz_path,
-            "export_path": os.path.join(tmp_dir, f"iuv_{safe_name}_export.fbx"),
-            "import_path": os.path.join(tmp_dir, f"iuv_{safe_name}_import.fbx"),
-            "lua_path": os.path.join(tmp_dir, f"iuv_{safe_name}_script.lua"),
-            "log_path": os.path.join(tmp_dir, f"iuv_{safe_name}_rizomuv.log"),
+            "export_path": os.path.join(tmp_dir, f"iuv_{safe_name}_{run_token}_export.fbx"),
+            "import_path": os.path.join(tmp_dir, f"iuv_{safe_name}_{run_token}_import.fbx"),
+            "lua_path": os.path.join(tmp_dir, f"iuv_{safe_name}_{run_token}_script.lua"),
+            "log_path": os.path.join(tmp_dir, f"iuv_{safe_name}_{run_token}_rizomuv.log"),
             "previous_selected": cls._save_selection(),
             "keep_temp": bool(getattr(settings, "keep_temp_files", False)),
             "margin_result": margin_result,
