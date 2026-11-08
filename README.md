@@ -184,21 +184,16 @@ defaults do not fit.
   import, registration including a second
   `register()` call in the same session, the panel, the operators, the
   properties exposed in the UI and unregister.
-- Pipeline suite: **13/13**, 0 failed (headless log):
-  the native pipeline on primitives, plus UDIM multi-tile packing, seam
-  preservation, the Edit Mode guard, global texel density across a batch, the
-  RizomUV link bridge contract and the English-lock UI check
-  (`pipeline_english_ui_and_credits`, which draws the panel and the License &
-  Credits popup on a spy layout with an Italian language set and asserts
-  `translate=False` on every text call).
-- UI probe: **86 unique static labels measured with `blf.dimensions`
-  (flagged=0), 87 runtime draw operations on the main panel and 22 runtime
-  draw calls in the License & Credits popup**, in Italian and English
-  (deterministic layout probe).
+- Regression suite on 0.36.0: **60/0**, 0 failed (headless log, task
+  `iuv-0360-regression-1108-a`, 2026-11-08). The pipeline suite (13/13 on
+  0.35.1) was **not re-run** on 0.36.0 (see `VERIFICATION.md`).
+- UI probe: **88 unique static labels measured with `blf.dimensions`
+  (flagged=0)** in Italian and English (deterministic layout probe,
+  `ui_report.txt`: `UI_SUMMARY labels=88 flagged=0 region_width=561`).
 - **G2 PASS, 2026-10-23**: manual RizomUV round trip on Suzanne with RizomUV
   2025.0.117, 500/500 faces matched, 1968 loops written.
-- **G3 PASS, 2026-10-23**: clean install lifecycle on a fresh Blender 5.2 LTS
-  configuration with the release ZIP (sha256 `df81d098...93a1`).
+- **G3 PASS, 2026-11-08**: clean install lifecycle on a fresh Blender 5.2 LTS
+  configuration with the native 0.36.0 ZIP (sha256 `9dd0ccc5...4f33`).
 - **Native-edition gate (G3)**: `gate_g3_native_install.ps1` installs the
   native (Blender Extensions) ZIP on a clean profile and asserts the extension
   enables, the panel and the run operator register, and no `rizomuv_*` module

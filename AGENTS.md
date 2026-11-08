@@ -36,7 +36,7 @@ build step. Non esiste una `actd_build\` e non va inventata.
   `.opencode\scripts\build_extension_native.ps1`) **esclude fisicamente**
   `rizomuv_bridge.py`, `rizomuv_link.py` e `rizomuv_script.py` dallo staging e dallo ZIP e
   impone `EXTERNAL_ENGINE_ENABLED = False` in `capabilities.py` nell'artefatto (verifica
-  sia a staging sia a ZIP chiuso: `build_extension_native.ps1:41-72`).
+  sia a staging sia a ZIP chiuso: `build_extension_native.ps1:52-66` a staging e `build_extension_native.ps1:68-100` a ZIP chiuso).
 - **Codice, commenti e docstring in inglese**: non tradurre, non mescolare le due lingue nei file.
 - Versione dichiarata: **0.36.0**, Blender minimo **4.2.0**, verificato su 5.2 LTS.
 

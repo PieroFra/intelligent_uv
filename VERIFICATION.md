@@ -12,7 +12,7 @@ real log, hash file or verdict line, and each one names its source.
 | SHA-256 | `d62457832b7e242ab4db284c3356b2f8353af91faf4c7d777c4183ee42b01936` |
 | Hash check | value in `dist/intelligent_uv-0.36.0.sha256` |
 | Files | 56 total: 52 `.py` (33 root modules + 10 in `operators/` + 9 in `tests/`) + 4 docs (`LICENSE`, `README.md`, `CHANGELOG.md`, `THIRD_PARTY.md`) |
-| File list | `dist/intelligent_uv-0.36.0.files.txt` (header: `bl_info.version (0, 36, 0)`, `generated 2026-11-08T21:00:57+01:00 deterministic build`) |
+| File list | `dist/intelligent_uv-0.36.0.files.txt` (header: `bl_info.version (0, 36, 0)`, `generated 2026-11-08T21:18:12+01:00 deterministic build`) |
 
 The `dist/` directory is gitignored on purpose: no binary artifacts are
 versioned in the repository.
@@ -24,7 +24,7 @@ versioned in the repository.
 | ZIP | `dist/intelligent_uv-0.36.0-nativo-extension.zip` (213688 bytes) |
 | SHA-256 | `9dd0ccc55c23a93e13e4c1849f468e53eb6691ea29470b347579128fbf594f33` (matches `dist/intelligent_uv-0.36.0-nativo-extension.sha256`; the staging variant `dist/intelligent_uv-0.36.0-nativo.zip` has a different hash, `2a1ff221c4cd...e7fad`, and is not the published artifact) |
 | Published as | Blender Extensions 0.36.0, status **Awaiting Review**, requested permissions: **Files** only |
-| Files | 53 total: 49 `.py` + 4 docs — `rizomuv_bridge.py`, `rizomuv_link.py` and `rizomuv_script.py` are physically absent (file list: `dist/intelligent_uv-0.36.0-nativo.files.txt`) |
+| Files | 54 ZIP entries total: 53 payload files (49 `.py` + 4 docs) plus `blender_manifest.toml` — `rizomuv_bridge.py`, `rizomuv_link.py` and `rizomuv_script.py` are physically absent (file list: `dist/intelligent_uv-0.36.0-nativo.files.txt`) |
 
 ## Automated Headless Suites (Blender 5.2.0 LTS, build `fbe6228777e7`)
 

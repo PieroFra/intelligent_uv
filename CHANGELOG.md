@@ -23,10 +23,10 @@
 **Changed**
 
 - Verification counts aligned across README, CHANGELOG and VERIFICATION:
-  smoke 14/14, pipeline 13/13, and the UI probe distinguished as
-  86 unique static labels measured with `blf.dimensions` (flagged=0),
-  87 runtime draw operations on the main panel, and 22 runtime draw calls in
-  the License & Credits popup.
+  smoke 14/14, regression suite 60/0 on 0.36.0 (task
+  `iuv-0360-regression-1108-a`; the pipeline suite was not re-run on 0.36.0),
+  and the UI probe reporting 88 unique static labels measured with
+  `blf.dimensions` (flagged=0) in Italian and English.
 
 ## 0.35.0 - UDIM tiles verified, seam pinning verified, global texel density across a batch, RizomUV bridge verified
 
