@@ -42,7 +42,7 @@ excludes the three `rizomuv_*` modules and pins the external engine off.
 
 ### Verification summary
 
-- Smoke suite 14/14, regression suite 60/0 on Blender 5.2.0 LTS (headless).
+- Smoke suite 14/14, regression suite 68/0 on Blender 5.2.0 LTS (headless).
 - UI probe: 88 labels, flagged=0, in Italian and English.
 - Clean install gate of the native edition passed on the published ZIP.
 

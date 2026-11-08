@@ -184,8 +184,8 @@ defaults do not fit.
   import, registration including a second
   `register()` call in the same session, the panel, the operators, the
   properties exposed in the UI and unregister.
-- Regression suite on 0.36.0: **60/0**, 0 failed (headless log, task
-  `iuv-0360-regression-1108-a`, 2026-11-08). The pipeline suite (13/13 on
+- Regression suite on 0.36.0: **68/0**, 0 failed (headless log, task
+  `iuv-robust-regression-1108-a`, 2026-11-08). The pipeline suite (13/13 on
   0.35.1) was **not re-run** on 0.36.0 (see `VERIFICATION.md`).
 - UI probe: **88 unique static labels measured with `blf.dimensions`
   (flagged=0)** in Italian and English (deterministic layout probe,

@@ -11,6 +11,7 @@ import copy
 import math
 import os
 import sys
+import time
 import traceback
 
 import bpy
@@ -75,6 +76,47 @@ def torus():
               ((i + 1) % n) * m + (j + 1) % m, i * m + (j + 1) % m)
              for i in range(n) for j in range(m)]
     return make_mesh(vertices, faces)
+
+
+def uv_sphere(segments, rings):
+    """Sfera UV chiusa: due poli, anelli interni e ventagli di triangoli ai poli."""
+    vertices = [(0.0, 0.0, 1.0)]
+    for r in range(1, rings):
+        theta = math.pi * r / rings
+        z = math.cos(theta)
+        radius = math.sin(theta)
+        for j in range(segments):
+            phi = 2 * math.pi * j / segments
+            vertices.append((radius * math.cos(phi), radius * math.sin(phi), z))
+    south = len(vertices)
+    vertices.append((0.0, 0.0, -1.0))
+
+    def ring(r, j):
+        return 1 + (r - 1) * segments + j % segments
+
+    faces = []
+    for j in range(segments):
+        faces.append((0, ring(1, j), ring(1, j + 1)))
+    for r in range(1, rings - 1):
+        for j in range(segments):
+            faces.append((ring(r, j), ring(r, j + 1),
+                          ring(r + 1, j + 1), ring(r + 1, j)))
+    for j in range(segments):
+        faces.append((south, ring(rings - 1, j + 1), ring(rings - 1, j)))
+    return make_mesh(vertices, faces)
+
+
+def cap_ring_mask(mesh, segments, rings):
+    """Solo gli anelli orizzontali adiacenti ai due poli, come seam virtuali."""
+    north = {1 + j for j in range(segments)}
+    south = {1 + (rings - 2) * segments + j for j in range(segments)}
+    mask = [False] * len(mesh.edges)
+    for edge in mesh.edges:
+        pair = set(edge.vertices)
+        if pair <= north or pair <= south:
+            mask[edge.index] = True
+    assert sum(mask) == 2 * segments, 'Anelli cap della sfera incompleti'
+    return mask
 
 
 def radial_mask(mesh):
@@ -446,6 +488,239 @@ def test_analysis_wrong_mask_length():
         bpy.data.meshes.remove(mesh)
 
 
+def expect_completion_honest(mesh, mask):
+    """Completamento deterministico che non inventa riparazioni.
+
+    Ogni regione non disco rimasta deve comparire in unresolved_regions e
+    nessun arco aggiunto puo' esistere gia' nella maschera di input.
+    """
+    output, added, unresolved = complete_preserving(mesh, mask)
+    final = analyze_preserving(mesh, output)
+    remaining = [region for region in final
+                 if not (region.supported and region.is_disk)]
+    assert {frozenset(region.face_indices) for region in remaining} == {
+        frozenset(region.face_indices) for region in unresolved}, \
+        'Regioni non disco non segnalate come irrisolte'
+    assert all(not region.is_disk for region in unresolved), 'Regione irrisolta classificata come disco'
+    for edge in added:
+        assert not mask[edge], 'Arco aggiunto gia presente nella maschera'
+    return output, added, unresolved
+
+
+def test_single_triangle():
+    mesh = make_mesh([(0, 0, 0), (1, 0, 0), (0, 1, 0)], [(0, 1, 2)])
+    try:
+        mask = (False,) * len(mesh.edges)
+        expect_single(mesh, mask, 1, 1, 0, True)
+        output, added, unresolved = expect_completion_honest(mesh, mask)
+        assert output == tuple(mask), 'Triangolo singolo: maschera modificata'
+        assert added == (), 'Triangolo singolo: archi inventati'
+        assert unresolved == (), 'Triangolo singolo: disco segnalato irrisolto'
+    finally:
+        bpy.data.meshes.remove(mesh)
+
+
+def test_hole_with_ngon():
+    # Anello quadrangolare con un bordo esterno a 5 vertici e una faccia pentagonale.
+    mesh = make_mesh([(0, 0, 0), (2, 0, 0), (2, 2, 0), (0, 2, 0),
+                      (0.75, 0.75, 0), (1.25, 0.75, 0), (1.25, 1.25, 0), (0.75, 1.25, 0),
+                      (1, 0, 0)],
+                     [(8, 1, 2, 6, 5), (0, 8, 5, 4), (2, 3, 7, 6), (3, 0, 4, 7)])
+    try:
+        mask = (False,) * len(mesh.edges)
+        regions = analyze_preserving(mesh, mask)
+        assert len(regions) == 1, 'Anello con n-gon deve formare una sola regione'
+        region = regions[0]
+        assert region.supported is True, 'Anello manifold con n-gon non supportato'
+        assert region.boundary_count == 2, 'Anello con n-gon: numero di bordi errato'
+        assert region.euler_characteristic == 0, 'Anello con n-gon: Eulero errato'
+        assert region.genus == 0, 'Anello con n-gon: genere errato'
+        assert region.is_disk is False, 'Anello con n-gon classificato come disco'
+        output, added, unresolved = expect_completion_honest(mesh, mask)
+        assert output != tuple(mask) or unresolved, 'Anello con n-gon non riparato e non segnalato'
+        if not added:
+            assert {frozenset(r.face_indices) for r in unresolved} == {
+                frozenset(region.face_indices)}, 'Anello non riparato senza segnalazione coerente'
+        else:
+            final = analyze_preserving(mesh, output)
+            assert all(r.supported and r.is_disk for r in final), 'Riparazione anello produce regioni non disco'
+    finally:
+        bpy.data.meshes.remove(mesh)
+
+
+def test_all_edges_marked_seam():
+    mesh = make_mesh([(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                     [(0, 1, 2), (0, 2, 3)])
+    try:
+        mask = (True,) * len(mesh.edges)
+        regions = analyze_preserving(mesh, mask)
+        assert len(regions) == 2, 'Tutte le seam devono separare le due facce'
+        assert {frozenset(r.face_indices) for r in regions} == {
+            frozenset((0,)), frozenset((1,))}, 'Partizione con tutte le seam errata'
+        for region in regions:
+            assert region.supported is True, 'Faccia isolata da seam non supportata'
+            assert region.is_disk is True, 'Faccia isolata da seam non e un disco'
+            assert region.boundary_count == 1, 'Faccia isolata con bordi errati'
+        output, added, unresolved = expect_completion_honest(mesh, mask)
+        assert output == tuple(mask), 'Tutte le seam: maschera di input modificata'
+        assert added == (), 'Tutte le seam: archi aggiunti inutilmente'
+        assert unresolved == (), 'Tutte le seam: dischi segnalati irrisolti'
+    finally:
+        bpy.data.meshes.remove(mesh)
+
+
+def test_duplicate_unfused_vertices():
+    # Due triangoli sovrapposti con coordinate identiche ma vertici non fusi.
+    mesh = make_mesh([(0, 0, 0), (1, 0, 0), (0, 1, 0),
+                      (0, 0, 0), (1, 0, 0), (0, 1, 0)],
+                     [(0, 1, 2), (3, 4, 5)])
+    try:
+        mask = (False,) * len(mesh.edges)
+        regions = analyze_preserving(mesh, mask)
+        assert len(regions) == 2, 'Vertici duplicati non fusi devono restare due regioni'
+        for region in regions:
+            assert region.supported is True, 'Triangolo duplicato non supportato'
+            assert region.is_disk is True, 'Triangolo duplicato non classificato come disco'
+            assert region.euler_characteristic == 1, 'Triangolo duplicato con Eulero errato'
+        output, added, unresolved = expect_completion_honest(mesh, mask)
+        assert added == (), 'Vertici duplicati non fusi: riparazione inventata'
+        assert unresolved == (), 'Vertici duplicati non fusi: dischi segnalati irrisolti'
+    finally:
+        bpy.data.meshes.remove(mesh)
+
+
+def test_analyze_wrong_mask_length():
+    mesh = annulus()
+    try:
+        analyze = analyzer()
+        module = importlib.import_module(PACKAGE + '.seam_topology')
+        complete = getattr(module, 'complete_boundary_cuts', None)
+        assert callable(complete), 'complete_boundary_cuts obbligatoria assente'
+        before_mesh = snapshot(mesh)
+        for size in (len(mesh.edges) - 1, len(mesh.edges) + 1):
+            for mask in ([False] * size, [True] * size):
+                before_mask = tuple(mask)
+                for function in (analyze, complete):
+                    try:
+                        function(mesh, mask)
+                    except ValueError:
+                        pass
+                    else:
+                        raise AssertionError('Lunghezza maschera errata deve sollevare ValueError')
+                assert tuple(mask) == before_mask, 'Errore dimensione modifica la maschera di input'
+                assert snapshot(mesh) == before_mesh, 'Errore dimensione modifica la mesh'
+    finally:
+        bpy.data.meshes.remove(mesh)
+
+
+def test_repeat_same_input_deterministic():
+    mesh = annulus()
+    try:
+        mask = [False] * len(mesh.edges)
+        first = analyze_preserving(mesh, mask)
+        second = analyze_preserving(mesh, mask)
+        assert region_signature(first) == region_signature(second), 'Analisi non deterministica a input identico'
+        output, added, unresolved = complete_preserving(mesh, mask)
+        output_again, added_again, unresolved_again = complete_preserving(mesh, list(output))
+        assert output_again == output, 'Completamento non idempotente sulla maschera di output'
+        assert added_again == (), 'Completamento ripetuto aggiunge altri archi'
+        assert region_signature(unresolved_again) == region_signature(unresolved), 'Regioni irrisolte non stabili'
+        assert region_signature(analyze_preserving(mesh, output)) == region_signature(
+            analyze_preserving(mesh, list(output))), 'Analisi non deterministica sulla maschera di output'
+    finally:
+        bpy.data.meshes.remove(mesh)
+
+
+def test_disconnected_non_manifold_island():
+    # Un disco isolato piu' un'isola con un arco condiviso da tre facce.
+    mesh = make_mesh([(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0),
+                      (5, 0, 0), (6, 0, 0), (5, 1, 0), (5, -1, 0), (5, 0, 1)],
+                     [(0, 1, 2), (0, 2, 3), (4, 5, 6), (5, 4, 7), (4, 5, 8)])
+    try:
+        mask = (False,) * len(mesh.edges)
+        regions = analyze_preserving(mesh, mask)
+        assert len(regions) == 2, 'Isole disconnesse devono formare due regioni'
+        supported = [r for r in regions if r.supported]
+        unsupported = [r for r in regions if not r.supported]
+        assert len(supported) == 1 and len(unsupported) == 1, 'Isola non manifold non riconosciuta'
+        disk = supported[0]
+        assert frozenset(disk.face_indices) == frozenset((0, 1)), 'Isola disco con facce errate'
+        assert disk.is_disk is True and disk.boundary_count == 1 and disk.genus == 0, \
+            'Isola disco con topologia errata'
+        broken = unsupported[0]
+        assert frozenset(broken.face_indices) == frozenset((2, 3, 4)), 'Isola non manifold con facce errate'
+        assert broken.is_disk is False and broken.genus is None, 'Isola non manifold classificata come disco'
+        output, added, unresolved = expect_completion_honest(mesh, mask)
+        assert added == (), 'Isola non manifold: riparazione inventata'
+        assert {frozenset(r.face_indices) for r in unresolved} == {
+            frozenset(broken.face_indices)}, 'Isola non manifold non segnalata irrisolta'
+        assert output == tuple(mask), 'Isola non manifold: maschera modificata'
+    finally:
+        bpy.data.meshes.remove(mesh)
+
+
+TIMINGS = {}
+
+
+def test_large_sphere_cap_seams_performance():
+    """Sfera UV 64x32 per emisfero: i due anelli cap forzano il cammino tra bordi.
+
+    I tempi finiscono in TIMINGS e in una riga REPORT, cosi' restano leggibili
+    senza soglie nascoste. La mesh e' chiusa e manifold: 64 meridiani per 64
+    anelli totali (32 per emisfero), cioe' 4096 facce.
+    """
+    mesh = uv_sphere(64, 64)
+    try:
+        assert len(mesh.polygons) == 4096, 'Fixture sfera con numero di facce errato'
+        mask = cap_ring_mask(mesh, 64, 64)
+        before = snapshot(mesh)
+        saved_mask = tuple(mask)
+        analyze = analyzer()
+        start = time.perf_counter()
+        regions = list(analyze(mesh, mask))
+        analyze_seconds = time.perf_counter() - start
+        assert snapshot(mesh) == before, 'Analisi della sfera modifica mesh, seam reali o UV'
+        assert tuple(mask) == saved_mask, 'Analisi della sfera modifica la maschera virtuale'
+        assert len(regions) == 3, 'Sfera con due cap tagliati deve avere tre regioni'
+        assert sorted(r.is_disk for r in regions) == [False, True, True], \
+            'Cap non dischi oppure banda centrale gia disco'
+        indices = sorted(i for region in regions for i in region.face_indices)
+        assert indices == list(range(len(mesh.polygons))), 'Partizione delle facce incompleta'
+
+        module = importlib.import_module(PACKAGE + '.seam_topology')
+        complete = getattr(module, 'complete_boundary_cuts', None)
+        assert callable(complete), 'complete_boundary_cuts obbligatoria assente'
+        start = time.perf_counter()
+        result = complete(mesh, mask)
+        complete_seconds = time.perf_counter() - start
+        assert snapshot(mesh) == before, 'Completamento della sfera modifica mesh, seam reali o UV'
+        assert tuple(mask) == saved_mask, 'Completamento della sfera modifica la maschera di input'
+        output = tuple(result.seam_mask)
+        assert len(output) == len(saved_mask), 'Maschera di output della sfera con dimensione errata'
+        assert bool(result.added_edges), 'Banda anulare chiusa senza cammino aggiunto'
+        assert not result.unresolved_regions, 'Sfera risolvibile lasciata irrisolta'
+        final = analyze_preserving(mesh, output)
+        assert final and all(r.supported and r.is_disk for r in final), \
+            'Sfera completata con regioni non disco'
+
+        # Guardia anti-regressione, non promessa di prestazioni: 2 secondi sono
+        # un ordine di grandezza sopra il valore atteso e servono solo a notare
+        # se il cammino tra i bordi degenera in quadratico o peggio.
+        assert complete_seconds < 2.0, 'Completamento della sfera oltre la guardia di 2 secondi'
+
+        TIMINGS['test_large_sphere_cap_seams_performance'] = {
+            'faces': len(mesh.polygons),
+            'edges': len(mesh.edges),
+            'analyze_s': analyze_seconds,
+            'complete_s': complete_seconds,
+        }
+        print('REPORT sfera faces={faces} edges={edges} analyze={analyze_s:.4f}s '
+              'complete={complete_s:.4f}s'.format(
+                  **TIMINGS['test_large_sphere_cap_seams_performance']))
+    finally:
+        bpy.data.meshes.remove(mesh)
+
+
 if __name__ == '__main__':
     tests = (test_open_disk, test_two_separate_disks, test_disk_with_loose_vertices,
              test_annulus, test_annulus_radial_seam,
@@ -456,7 +731,11 @@ if __name__ == '__main__':
              test_analysis_complete_annulus_equivalence,
              test_analysis_complete_disk_equivalence,
              test_analysis_complete_torus_equivalence,
-             test_analysis_inconsistent_data_unrepaired, test_analysis_wrong_mask_length)
+             test_analysis_inconsistent_data_unrepaired, test_analysis_wrong_mask_length,
+             test_single_triangle, test_hole_with_ngon, test_all_edges_marked_seam,
+             test_duplicate_unfused_vertices, test_analyze_wrong_mask_length,
+             test_repeat_same_input_deterministic, test_disconnected_non_manifold_island,
+             test_large_sphere_cap_seams_performance)
     passed = failed = 0
     for test in tests:
         try:
