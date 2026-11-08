@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.35.1 - Hardened _EnglishLayout proxy, dedicated Italian UI & Credits test suite, and aligned verification records
+## 0.36.0 - Hardened _EnglishLayout proxy, dedicated Italian UI & Credits test suite, and aligned verification records
 
 **Fixed**
 

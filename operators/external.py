@@ -15,13 +15,11 @@ import bpy
 
 import os
 
-from ..rizomuv_bridge import RizomUVBridge
-from ..rizomuv_link import (
-    RizomUVLinkBridge,
-    ensure_link_on_path,
-    is_available as link_available,
-    unavailable_reason as link_unavailable_reason,
-)
+from .. import capabilities
+
+# The bridges are imported inside the methods that use them, never here: the
+# native edition must not touch rizomuv_bridge or rizomuv_link at import time,
+# and every entry point is gated on capabilities.EXTERNAL_ENGINE_ENABLED.
 
 
 class ExternalEngineMixin:
@@ -35,6 +33,11 @@ class ExternalEngineMixin:
         modal(): the handler is registered once for the whole batch, and adding
         it again would deliver every event twice.
         """
+        if not capabilities.EXTERNAL_ENGINE_ENABLED:
+            # Checked before the settings are read: the native edition must not
+            # probe rizomuv_path, the filesystem or sys.path at all.
+            return None
+
         obj = state["obj"]
         settings = state["settings"]
         seam_plan = state["seam_plan"]
@@ -70,6 +73,14 @@ class ExternalEngineMixin:
         # RizomUV through its documented API instead of a Lua script whose
         # syntax cannot be verified, and `-cfi` never terminates on its own.
         # The API ships inside the RizomUV install dir, not on sys.path.
+        from ..rizomuv_bridge import RizomUVBridge
+        from ..rizomuv_link import (
+            RizomUVLinkBridge,
+            ensure_link_on_path,
+            is_available as link_available,
+            unavailable_reason as link_unavailable_reason,
+        )
+
         ensure_link_on_path(rz_path)
         mode = str(getattr(settings, "rizomuv_engine_mode", "AUTO") or "AUTO")
         use_link = (mode == 'LINK') or (mode == 'AUTO' and link_available())
@@ -149,8 +160,11 @@ class ExternalEngineMixin:
     def _cleanup_bridge(self, failed=False):
         """Cleans up whichever bridge is active, then clears it."""
         ctx = self._bridge_ctx
-        if ctx is None:
+        if ctx is None or not capabilities.EXTERNAL_ENGINE_ENABLED:
             return
+
+        from ..rizomuv_bridge import RizomUVBridge
+        from ..rizomuv_link import RizomUVLinkBridge
 
         try:
             if ctx.get("mode") == "link":
@@ -181,6 +195,14 @@ class ExternalEngineMixin:
         self._end_progress(context)
 
     def _modal_impl(self, context, event):
+        if not capabilities.EXTERNAL_ENGINE_ENABLED:
+            # No bridge can exist in the native edition, so no polling state
+            # has to be read: close the item without importing the bridges.
+            return self._finish_external(context, success=False)
+
+        from ..rizomuv_bridge import RizomUVBridge
+        from ..rizomuv_link import RizomUVLinkBridge
+
         if event.type in {'ESC'}:
             ctx = self._bridge_ctx
             if ctx is not None:
@@ -345,7 +367,10 @@ class ExternalEngineMixin:
         # script engine's Popen handle, so calling it on a live-link context
         # left the RizomUV instance launched via RunRizomUV running forever.
         ctx = self._bridge_ctx
-        if ctx is not None:
+        if ctx is not None and capabilities.EXTERNAL_ENGINE_ENABLED:
+            from ..rizomuv_bridge import RizomUVBridge
+            from ..rizomuv_link import RizomUVLinkBridge
+
             try:
                 if ctx.get("mode") == "link":
                     RizomUVLinkBridge.terminate(ctx)

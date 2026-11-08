@@ -1,7 +1,7 @@
 # Intelligent UV Mapping: Blender Add-on
 
 [![Blender](https://img.shields.io/badge/Blender-4.2%20LTS%20%E2%80%94%205.2%2B-blueviolet)](https://www.blender.org)
-[![Version](https://img.shields.io/badge/version-0.35.1-brightgreen)](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.35.1)
+[![Version](https://img.shields.io/badge/version-0.36.0-brightgreen)](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.36.0)
 [![License](https://img.shields.io/badge/License-GPL--3.0--or--later-blue)](LICENSE)
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/PieroFra/badge.svg)](https://hub.xerj.org/contributors/PieroFra)
 [![Downloads](https://img.shields.io/github/downloads/PieroFra/intelligent_uv/total?label=downloads)](https://github.com/PieroFra/intelligent_uv/releases)
@@ -9,14 +9,22 @@
 Automated UV unwrapping for Blender: curvature-driven seam planning, island
 merging, texel density normalization, and an optional bridge to RizomUV.
 
-Version 0.35.1 · targets Blender 4.2+ · tested against Blender 5.2 LTS
+Version 0.36.0 · targets Blender 4.2+ · tested against Blender 5.2 LTS
 Author: Pierfrancesco Diodato · License: GPL-3.0-or-later
+
+Two editions are built from the same source. The full edition (GitHub releases)
+carries the optional RizomUV integration. The native edition for Blender
+Extensions (0.36.0, built by `.opencode/scripts/build_extension_native.ps1`)
+physically excludes `rizomuv_bridge.py`, `rizomuv_link.py` and
+`rizomuv_script.py` from the package and ships `capabilities.py` with
+`EXTERNAL_ENGINE_ENABLED = False` baked into the artifact, so the external
+engine is absent, not merely disabled.
 
 ## Demo
 
-![Intelligent UV demo](docs/media/intelligent_uv_demo_v0.35.1.gif)
+![Intelligent UV demo](docs/media/intelligent_uv_demo_v0.36.0.gif)
 
-[Watch the 1080p 60fps MP4 showcase](https://raw.githubusercontent.com/PieroFra/intelligent_uv/main/docs/media/intelligent_uv_demo_v0.35.1.mp4)
+[Watch the 1080p 60fps MP4 showcase](https://raw.githubusercontent.com/PieroFra/intelligent_uv/main/docs/media/intelligent_uv_demo_v0.36.0.mp4)
 
 ---
 
@@ -60,7 +68,7 @@ Author: Pierfrancesco Diodato · License: GPL-3.0-or-later
 
 ## Installation
 
-Install the release ZIP (`intelligent_uv-0.35.1.zip`, attached to the v0.35.1
+Install the release ZIP (`intelligent_uv-0.36.0.zip`, attached to the v0.36.0
 release on the GitHub releases page) through **Edit > Preferences > Add-ons >
 Install from Disk**, or copy the `intelligent_uv` folder into your Blender
 `scripts/addons` directory. The panel appears in the 3D View sidebar (N) under the
@@ -191,6 +199,11 @@ defaults do not fit.
   2025.0.117, 500/500 faces matched, 1968 loops written.
 - **G3 PASS, 2026-10-23**: clean install lifecycle on a fresh Blender 5.2 LTS
   configuration with the release ZIP (sha256 `df81d098...93a1`).
+- **Native-edition gate (G3)**: `gate_g3_native_install.ps1` installs the
+  native (Blender Extensions) ZIP on a clean profile and asserts the extension
+  enables, the panel and the run operator register, and no `rizomuv_*` module
+  is present. Its verdict is the final line, `G3_NATIVE OK | ...` or
+  `G3_NATIVE FAIL | ...`.
 - **RizomUV automated bridge, 2026-10-25**: the operator exercised **Auto**,
   **Live Link** and **Lua Script** in a real desktop session on Blender 5.2.0
   LTS with RizomUV 2025.0.117, with the headless `pipeline_link_bridge_contract`

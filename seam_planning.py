@@ -7,6 +7,7 @@ Seam candidate planning from curvature and material boundaries.
 
 from .curvature import CurvatureEstimator
 from .margins import MarginCalculator
+from . import seam_topology
 from .utils import angle_between_degrees
 
 try:
@@ -457,6 +458,24 @@ class SeamPlanner:
                 result.info.append(
                     f"Pruned {pruned} dangling seam edges that separated nothing."
                 )
+
+        # Complete boundary cuts after pruning so valid topology cuts survive.
+        completion = seam_topology.complete_analysis_boundary_cuts(
+            mesh_analysis, is_seam
+        )
+        is_seam = list(completion.seam_mask)
+        result.seam_edges = {i for i, flag in enumerate(is_seam) if flag}
+        if completion.added_edges:
+            result.info.append(
+                f"Added {len(completion.added_edges)} topology boundary-cut edges "
+                "(separate from angle and material seam counts)."
+            )
+        if completion.unresolved_regions:
+            result.warnings.append(
+                f"Topology completion left {len(completion.unresolved_regions)} "
+                "unresolved non-disk regions; unsupported or positive-genus "
+                "topology is not guaranteed repaired."
+            )
 
         result.is_seam = is_seam
         result.material_seam_count = material_cut_count

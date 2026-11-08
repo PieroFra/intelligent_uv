@@ -28,9 +28,33 @@ import subprocess
 
 import bpy
 
-from .rizomuv_bridge import RizomUVBridge
+from . import capabilities
 from .uv_executor import MinimalUVExecutor
 from .validation import ContextGuard
+
+# The bridge is imported inside the functions that use it, never here: the
+# native edition must not touch rizomuv_bridge at import time, and every entry
+# point is gated on capabilities.EXTERNAL_ENGINE_ENABLED.
+
+NO_ENGINE_MESSAGE = (
+    "The external engine is disabled in this edition; the manual FBX round "
+    "trip is unavailable."
+)
+
+
+def _bridge():
+    """
+    Returns the bridge class, or None when the external engine is disabled.
+
+    Imported here rather than at module level so that loading the add-on never
+    pulls rizomuv_bridge in the native edition.
+    """
+    if not capabilities.EXTERNAL_ENGINE_ENABLED:
+        return None
+
+    from .rizomuv_bridge import RizomUVBridge
+
+    return RizomUVBridge
 
 
 def open_in_rizomuv(settings, filepath):
@@ -49,6 +73,14 @@ def open_in_rizomuv(settings, filepath):
 
     Returns (launched: bool, message: str).
     """
+    if not capabilities.EXTERNAL_ENGINE_ENABLED:
+        # Checked before anything else: there is no engine to launch, so the
+        # path must not be read and no process may be started.
+        return False, (
+            "The external engine is disabled; the FBX was written but not "
+            "opened."
+        )
+
     rz_path = str(getattr(settings, "rizomuv_path", "") or "").strip()
 
     if not rz_path:
@@ -162,6 +194,11 @@ class IntelligentUV_OT_ExportFBX(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        bridge = _bridge()
+        if bridge is None:
+            self.report({'ERROR'}, NO_ENGINE_MESSAGE)
+            return {'CANCELLED'}
+
         obj = ContextGuard.get_context_object(context)
         settings = context.scene.intelligent_uv_settings
 
@@ -183,7 +220,7 @@ class IntelligentUV_OT_ExportFBX(bpy.types.Operator):
                 self.report({'WARNING'}, f"Seam planning skipped: {exc}")
 
         try:
-            RizomUVBridge.export_object_fbx(obj, filepath)
+            bridge.export_object_fbx(obj, filepath)
         except Exception as exc:
             self.report({'ERROR'}, f"Export failed: {exc}")
             return {'CANCELLED'}
@@ -243,6 +280,11 @@ class IntelligentUV_OT_ImportFBX(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        bridge = _bridge()
+        if bridge is None:
+            self.report({'ERROR'}, NO_ENGINE_MESSAGE)
+            return {'CANCELLED'}
+
         obj = ContextGuard.get_context_object(context)
         settings = context.scene.intelligent_uv_settings
 
@@ -267,7 +309,7 @@ class IntelligentUV_OT_ImportFBX(bpy.types.Operator):
 
         try:
             uv_name, copied, unmatched, total, fit_info = \
-                RizomUVBridge.import_uvs_from_fbx(obj, settings, self.filepath)
+                bridge.import_uvs_from_fbx(obj, settings, self.filepath)
         except Exception as exc:
             self.report({'ERROR'}, str(exc))
             return {'CANCELLED'}
@@ -304,6 +346,11 @@ class IntelligentUV_OT_ImportLast(bpy.types.Operator):
         return bool(last_import_candidate(context.scene.intelligent_uv_settings))
 
     def execute(self, context):
+        bridge = _bridge()
+        if bridge is None:
+            self.report({'ERROR'}, NO_ENGINE_MESSAGE)
+            return {'CANCELLED'}
+
         obj = ContextGuard.get_context_object(context)
         settings = context.scene.intelligent_uv_settings
 
@@ -333,7 +380,7 @@ class IntelligentUV_OT_ImportLast(bpy.types.Operator):
 
         try:
             uv_name, copied, unmatched, total, fit_info = \
-                RizomUVBridge.import_uvs_from_fbx(obj, settings, path)
+                bridge.import_uvs_from_fbx(obj, settings, path)
         except Exception as exc:
             self.report({'ERROR'}, str(exc))
             return {'CANCELLED'}
