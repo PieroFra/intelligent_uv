@@ -35,7 +35,19 @@ try {
     # 2. Ricomposizione in layout extension: __init__.py e i moduli alla radice.
     New-Item -ItemType Directory -Path $stage -Force | Out-Null
     Copy-Item (Join-Path $staging 'intelligent_uv\*') -Destination $stage -Recurse -Force
-    Copy-Item -LiteralPath (Join-Path $root 'blender_manifest.toml') -Destination (Join-Path $stage 'blender_manifest.toml') -Force
+    # Il manifest dell'edizione nativa e' riscritto a partire da quello del repo:
+    # tolta solo la chiave network (RizomUV e' assente), resta [permissions] files;
+    # tagline senza riferimento al motore esterno. Il manifest del repo resta invariato.
+    $manifestSrc = Get-Content -LiteralPath (Join-Path $root 'blender_manifest.toml') -Raw
+    $manifestNative = $manifestSrc -replace '(?m)^tagline\s*=\s*".*"$',
+        'tagline = "Curvature and shape-clustering UV unwrapping, Blender-only"'
+    $manifestNative = $manifestNative -replace '(?m)^network\s*=\s*"[^"]*"\r?\n?', ''
+    $manifestNative = $manifestNative.TrimEnd() + "`r`n"
+    if ($manifestNative -match 'RizomUV' -or $manifestNative -match '(?m)^network\s*=') {
+        throw 'NATIVO: il manifest riscritto contiene ancora network o riferimenti a RizomUV.'
+    }
+    [IO.File]::WriteAllText((Join-Path $stage 'blender_manifest.toml'), $manifestNative,
+        (New-Object System.Text.UTF8Encoding($false)))
 
     # Autoverifica del layout nativo nello staging.
     $excluded = @('rizomuv_bridge.py', 'rizomuv_link.py', 'rizomuv_script.py')
@@ -70,6 +82,21 @@ try {
         try { $capZip = $reader.ReadToEnd() } finally { $reader.Dispose() }
         if ($capZip -notmatch '(?m)^\s*EXTERNAL_ENGINE_ENABLED\s*=\s*False\s*$') {
             throw 'capabilities.py nello ZIP non ha EXTERNAL_ENGINE_ENABLED = False.'
+        }
+        $manEntry = $zip.GetEntry('blender_manifest.toml')
+        $reader2 = New-Object IO.StreamReader($manEntry.Open(), [Text.Encoding]::UTF8)
+        try { $manZip = $reader2.ReadToEnd() } finally { $reader2.Dispose() }
+        if ($manZip -match 'RizomUV' -or $manZip -match '(?m)^network\s*=') {
+            throw 'Manifest nello ZIP contiene network o riferimenti a RizomUV.'
+        }
+        if ($manZip -notmatch '(?m)^files = "Save presets and export or import FBX files for UV editing"\r?$') {
+            throw 'Manifest nello ZIP: permission files mancante.'
+        }
+        if ($manZip -notmatch [regex]::Escape('tagline = "Curvature and shape-clustering UV unwrapping, Blender-only"')) {
+            throw 'Manifest nello ZIP: tagline nativa mancante.'
+        }
+        if ($manZip -notmatch '(?m)^version = "0\.36\.0"$') {
+            throw 'Manifest nello ZIP: versione non 0.36.0.'
         }
         $entryCount = $names.Count
     }
