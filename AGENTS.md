@@ -30,7 +30,7 @@ build step. Non esiste una `actd_build\` e non va inventata.
 | RizomUV | `rizomuv_bridge`, `rizomuv_link`, `rizomuv_script` | import **lazy**, Windows-only |
 | capability | `capabilities.py` | `EXTERNAL_ENGINE_ENABLED` (bool fisso, `capabilities.py:8`) |
 
-- ~11.700 righe, 41 file (31 moduli + 10 in `operators\`).
+- ~15.238 righe, 52 file `.py` (33 moduli radice + 10 in `operators\` + 9 test in `tests\`), conteggio da `dist\intelligent_uv-0.36.0.files.txt`.
 - **Due edizioni dallo stesso sorgente.** L'edizione completa (GitHub) contiene l'integrazione
   RizomUV opzionale; l'edizione nativa per Blender Extensions (0.36.0, script
   `.opencode\scripts\build_extension_native.ps1`) **esclude fisicamente**
@@ -38,7 +38,7 @@ build step. Non esiste una `actd_build\` e non va inventata.
   impone `EXTERNAL_ENGINE_ENABLED = False` in `capabilities.py` nell'artefatto (verifica
   sia a staging sia a ZIP chiuso: `build_extension_native.ps1:41-72`).
 - **Codice, commenti e docstring in inglese**: non tradurre, non mescolare le due lingue nei file.
-- Versione dichiarata: **0.35.1**, Blender minimo **4.2.0**, verificato su 5.2 LTS.
+- Versione dichiarata: **0.36.0**, Blender minimo **4.2.0**, verificato su 5.2 LTS.
 
 ---
 
@@ -93,15 +93,17 @@ Lo smoke test copre import, registrazione, pannello, operatori, proprietà e unr
 - Lo smoke test copre registrazione e struttura, non la pipeline: export, seam, import e RizomUV
   restano scoperti.
 - Il probe UI deterministico (misura di ogni etichetta con `blf.dimensions`) è attivo anche qui:
-  75 etichette, `flagged=0` in IT e EN, screenshot in `%TEMP%\opencode\iuv_gui\`.
+  88 etichette, `flagged=0` in IT e EN, screenshot in `%TEMP%\opencode\iuv_gui\`
+  (run 2026-11-08 19:51, `ui_report.txt`: `UI_SUMMARY labels=88 flagged=0 region_width=561`).
 - Il doppio `register()` è verificato: il check `doppio_register` dello smoke test richiama
   `register()` una seconda volta e controlla che `Scene.intelligent_uv_settings` sopravviva. Log
   `.opencode\tests\test_out.txt`: 14/14, 0 fallimenti. Restano scoperti pipeline UV e RizomUV.
 - RizomUV non è verificabile headless: serve il programma installato e un caso reale.
 - Il packaging esiste: `.opencode\scripts\package_release.ps1` produce in `dist\` (gitignored)
-  `intelligent_uv-0.35.1.zip`, il `.sha256` e la lista file; pubblicati su GitHub (release
-  `v0.35.1`, 3 asset caricati il 2026-10-25). Resta aperto il gate G3, cioè l'installazione pulita
-  su configurazione vergine.
+  `intelligent_uv-0.36.0.zip`, il `.sha256` e la lista file (release GitHub
+  `v0.36.0`). Il gate G3, cioè l'installazione pulita su configurazione vergine, è
+  **superato**: ultima riga `G3_NATIVE OK` con `.opencode\scripts\gate_g3_native_install.ps1`
+  sullo ZIP 0.36.0 dell'edizione nativa.
 
 ---
 

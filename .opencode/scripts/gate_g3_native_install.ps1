@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 
 # Gate G3 (installazione nativa): profilo utente Blender isolato in TEMP,
 # installazione e abilitazione della sola edizione nativa in formato extension
-# (dist\intelligent_uv-0.35.1-nativo-extension.zip), poi controllo headless:
+# (dist\intelligent_uv-0.36.0-nativo-extension.zip), poi controllo headless:
 #   1) estensione abilitata (chiave 'intelligent_uv' o 'bl_ext.<repo>.intelligent_uv'
 #      in preferences.addons);
 #   2) pannello VIEW3D_PT_IntelligentUV e operatore intelligent_uv.run registrati;
@@ -20,7 +20,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $blender = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 if (-not (Test-Path -LiteralPath $blender)) { throw "Blender non trovato: $blender" }
-if (-not $Zip) { $Zip = Join-Path $root 'dist\intelligent_uv-0.35.1-nativo-extension.zip' }
+if (-not $Zip) { $Zip = Join-Path $root 'dist\intelligent_uv-0.36.0-nativo-extension.zip' }
 if (-not (Test-Path -LiteralPath $Zip)) { throw "Artefatto nativo assente: $Zip" }
 
 $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'

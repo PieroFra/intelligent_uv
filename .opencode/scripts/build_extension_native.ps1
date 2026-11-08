@@ -6,8 +6,8 @@ $ErrorActionPreference = 'Stop'
 # ricompone l'albero in layout extension (manifest alla radice) e chiama
 # `blender --command extension build` + validate.
 #
-# Non sovrascrive gli artefatti GitHub (intelligent_uv-0.35.1.zip/.sha256/.files.txt):
-# l'output e' dist\intelligent_uv-0.35.1-nativo-extension.zip + .sha256.
+# Non sovrascrive gli artefatti GitHub (intelligent_uv-0.36.0.zip/.sha256/.files.txt):
+# l'output e' dist\intelligent_uv-0.36.0-nativo-extension.zip + .sha256.
 
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $blender = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"

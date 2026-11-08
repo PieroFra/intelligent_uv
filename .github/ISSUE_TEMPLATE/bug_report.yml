@@ -48,8 +48,8 @@ body:
     id: addon-version
     attributes:
       label: Versione addon
-      description: Versione dell'addon Intelligent UV Mapping installata (es. 0.35.1)
-      placeholder: 0.35.1
+      description: Versione dell'addon Intelligent UV Mapping installata (es. 0.36.0)
+      placeholder: 0.36.0
     validations:
       required: true
 
