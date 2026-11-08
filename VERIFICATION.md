@@ -21,8 +21,9 @@ versioned in the repository.
 
 | Item | Value |
 |---|---|
-| ZIP | `dist/intelligent_uv-0.36.0-nativo-extension.zip` (213737 bytes) |
-| SHA-256 | `2a1ff221c4cddfc04613405933b4554c642677372642a87dedf36413681e7fad` (matches `dist/intelligent_uv-0.36.0-nativo.sha256`) |
+| ZIP | `dist/intelligent_uv-0.36.0-nativo-extension.zip` (213688 bytes) |
+| SHA-256 | `9dd0ccc55c23a93e13e4c1849f468e53eb6691ea29470b347579128fbf594f33` (matches `dist/intelligent_uv-0.36.0-nativo-extension.sha256`; the staging variant `dist/intelligent_uv-0.36.0-nativo.zip` has a different hash, `2a1ff221c4cd...e7fad`, and is not the published artifact) |
+| Published as | Blender Extensions 0.36.0, status **Awaiting Review**, requested permissions: **Files** only |
 | Files | 53 total: 49 `.py` + 4 docs — `rizomuv_bridge.py`, `rizomuv_link.py` and `rizomuv_script.py` are physically absent (file list: `dist/intelligent_uv-0.36.0-nativo.files.txt`) |
 
 ## Automated Headless Suites (Blender 5.2.0 LTS, build `fbe6228777e7`)
@@ -53,10 +54,12 @@ code, so the layout metric is the same in both interface languages.
 
 ## Clean Install of the Native Extension (gate G3)
 
-Not re-executed for the 0.36.0 artifact: the gate script
-`.opencode/scripts/gate_g3_native_install.ps1` defaults to
-`dist/intelligent_uv-0.36.0-nativo-extension.zip`, but no G3 log or verdict
-exists for this artifact yet. **G3 remains open.**
+**PASS for the 0.36.0 native artifact**: the gate script
+`.opencode/scripts/gate_g3_native_install.ps1` installed
+`dist/intelligent_uv-0.36.0-nativo-extension.zip` (SHA-256
+`9dd0ccc55c23a93e13e4c1849f468e53eb6691ea29470b347579128fbf594f33`) on a
+clean Blender profile; its verdict line is `G3_NATIVE OK` (last line of the
+gate run).
 
 ## Carried Evidence from 0.35.1
 
@@ -81,6 +84,6 @@ corresponding gates for this release.
 | Gate | Verdict |
 |---|---|
 | G1 smoke + regression on 0.36.0 | **PASS**, 2026-11-08 (14/14 smoke, 60/0 regression) |
-| G3 clean install of the native extension | **OPEN**, no run recorded for the 0.36.0 artifact |
+| G3 clean install of the native extension | **PASS**, `G3_NATIVE OK` on `dist/intelligent_uv-0.36.0-nativo-extension.zip` (SHA-256 `9dd0ccc55c23a93e13e4c1849f468e53eb6691ea29470b347579128fbf594f33`) |
 | G2 manual RizomUV round trip on 0.36.0 | **NOT RE-RUN** (0.35.1 evidence: PASS, 2026-10-23) |
 | Pipeline suite on 0.36.0 | **NOT RE-RUN** (0.35.1 evidence: 13/13, 2026-10-25) |
