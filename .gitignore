@@ -19,4 +19,13 @@ dist/
 # Output di test e probe (rigenerabili)
 *.log
 
+# Log CI e output temporanei
+%TEMP%/
+ci-logs/
+
+# Esperimenti (non-gate) e configurazione locale
+_esperimenti/
+opencode.json
+verifica-*.json
+
 # Note e configurazione locali (non pubbliche)

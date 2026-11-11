@@ -83,7 +83,7 @@ corresponding gates for this release.
 
 | Gate | Verdict |
 |---|---|
-| G1 smoke + regression on 0.36.0 | **PASS**, 2026-11-08 (14/14 smoke, 60/0 regression) |
+| G1 smoke + regression on 0.36.0 | **PASS**, 2026-11-08 (14/14 smoke, 68/0 regression, task `iuv-robust-regression-1108-a`, run `20261108215801-bc565270`) |
 | G3 clean install of the native extension | **PASS**, `G3_NATIVE OK` on `dist/intelligent_uv-0.36.0-nativo-extension.zip` (SHA-256 `9dd0ccc55c23a93e13e4c1849f468e53eb6691ea29470b347579128fbf594f33`) |
 | G2 manual RizomUV round trip on 0.36.0 | **NOT RE-RUN** (0.35.1 evidence: PASS, 2026-10-23) |
 | Pipeline suite on 0.36.0 | **NOT RE-RUN** (0.35.1 evidence: 13/13, 2026-10-25) |

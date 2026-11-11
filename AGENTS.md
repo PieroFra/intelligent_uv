@@ -119,7 +119,7 @@ attiva dal 2026-10-26 dopo l'esaurimento dei limiti gratuiti):
   deleghe con tag, non tocca file; risposta nella struttura Stato / Piano / Deleghe / Prossimo passo.
 - `architetto-free`: Claude Haiku 5.5 #low (`opencode/claude-haiku-5-5#low`, unico modello paid a
   basso costo; forza tutti i subagenti sui modelli *-free di Zen e ollama locali a 0 €).
-- `coder`: `opencode/deepseek-v4.1-flash` (Zen, paid) - patch chirurgiche su `*.py` e test headless.
+- `coder`: `openrouter/reflection/beam-1.0-501b-a23b` (OpenRouter, dal 2026-11-10: canary patch 6/6, tool call e ciclo agentico reale verificati su `_esperimenti`) - patch chirurgiche su `*.py` e test headless.
 - `tester`: `opencode/deepseek-v4.1-flash#low` (online: il gate reale).
 - `repo-ops`: `opencode/deepseek-v4.1-flash#low` - test, docs, packaging, esperimenti documentati.
 - `esploratore`: `opencode/qwen3.8-flash` (Zen, paid, file `esploratore.md`) - solo `_esperimenti\`, risultati non-gate.
@@ -132,7 +132,7 @@ attiva dal 2026-10-26 dopo l'esaurimento dei limiti gratuiti):
 - `diagnostico`: `opencode/deepseek-v4.1-flash#low` -
   localizza la causa radice dei bug (file:righe) con `grep`/`read` e verifica la riproduzione
   headless; sola lettura, risposta in 3 righe.
-- `traduttore`: `ollama/nemotron-bolt-e4b-q8:actd` (locale, solo testo).
+- `traduttore`: `openrouter/openai/gpt-6-luna` (solo testo).
 - `ops-offline`: `ollama/nemotron-bolt-e4b-q8:actd`.
 - `coder-offline`: `ollama/mimo-v2.6-9b-q8:actd`.
 - `architetto-offline`: `ollama/qwen35-9b-q8:actd`.

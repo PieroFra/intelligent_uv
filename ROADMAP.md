@@ -5,7 +5,7 @@ cheap to keep updated. It is not a feature roadmap. New UV algorithms are out of
 scope until the repository, the documentation and the verification story agree
 with the code.
 
-Baseline: **0.34.0**. Target: the first tagged public release of that baseline,
+Baseline: **0.36.0**. Target: the first tagged public release of that baseline,
 with an artifact that installs cleanly and a set of logs that supports every
 claim the README, the release notes and any portfolio material make. Post-release
 development and the GitHub publication plan are recorded separately in section 8
@@ -75,7 +75,7 @@ Everything below is read from the repository, not from earlier plans.
 | Pipeline test | **7 passed, 0 failed, 7 total** on the same build: three negative paths (no active object, non-mesh object, empty mesh) and the native pipeline on cube, cylinder and sphere, with UV range/density/angle checks | pipeline log |
 | Register risk | The log includes passing `doppio_register` and `re-register` checks; the guard tracks what it registered and snapshots scene settings. `register()` now reads scenes through `getattr` so it survives Blender's `RestrictBlend` sandbox | smoke log, `__init__.py` |
 | Test scope | The smoke test covers registration, panel, operators, properties and unregister; the pipeline test covers the native pipeline on **primitives only**. Neither runs on the gate asset, and neither executes the external/RizomUV path | `smoke_test.py`, `pipeline_test.py` |
-| Repository | Branch `main`, one commit (`e357426 import iniziale Intelligent UV Mapping 0.34.0`), **no remote configured** | `git log`, `git remote` |
+| Repository | Branch `main`, remote `origin` configurato su GitHub (`PieroFra/intelligent_uv`) | `git log`, `git remote -v` |
 | Working tree | `README.md`, `ROADMAP.md`, `__init__.py` and the smoke test are modified but uncommitted; the two UI-probe scripts, `LICENSE` and `THIRD_PARTY.md` are untracked | `git status` |
 | Distribution files | `LICENSE` (GPL-3.0-or-later) and `THIRD_PARTY.md` exist but are **not committed**; no `.github/`, no `blender_manifest.toml`, no packaging script | directory listing, `git status` |
 | Documentation drift | `CHANGELOG.md` now has a **0.34.0** entry, and neither the README nor this file cites `tests/test_core.py` any more: both point at the smoke suite. The 0.16.0 version drift in this file is fixed by this revision | `CHANGELOG.md`, `README.md`, grep over `*.md` |
