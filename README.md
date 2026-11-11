@@ -22,13 +22,21 @@ engine is absent, not merely disabled.
 
 ## Demo
 
-![Intelligent UV demo](docs/media/intelligent_uv_demo_v0.36.0.gif)
+![Intelligent UV demo](docs/media/intelligent_uv_demo_v0.35.1.gif)
 
-[Watch the 1080p 60fps MP4 showcase](https://raw.githubusercontent.com/PieroFra/intelligent_uv/main/docs/media/intelligent_uv_demo_v0.36.0.mp4)
+[Watch the 1080p 60fps MP4 showcase](https://raw.githubusercontent.com/PieroFra/intelligent_uv/main/docs/media/intelligent_uv_demo_v0.35.1.mp4)
+
+![Intelligent UV sidebar panel](docs/images/01-sidebar-intelligent-uv.png)
+*Sidebar panel of the addon (View3D > Intelligent UV tab).*
+
+![UV checker result](docs/images/02-uv-checker-result.png)
+*Render of the checker scene after the UV pipeline run.*
 
 ---
 
 ## What It Does
+
+![Pipeline preview](docs/media/iuv_f1.png)
 
 - **One-click unwrap with a non-destructive preview.** A single button runs the
   whole pipeline: analysis, seam planning, unwrap, packing and the quality
@@ -47,6 +55,9 @@ engine is absent, not merely disabled.
   different scales shares one world-space density target computed from the
   total area, so every object ends at the same density instead of each getting
   its own.
+
+![Batch texel density](docs/media/iuv_f2.png)
+
 - **Texture sets and UDIM multi-tile packing.** Give each material its own
   image on the shared 0-1 space, or spread the layout across UDIM tiles (1001,
   1002, 1003...) in one continuous UV space. Tile assignment is verified
@@ -63,6 +74,8 @@ engine is absent, not merely disabled.
     installs without the Python API.
   - **Auto** uses the Live Link when available and falls back to the Lua
     Script engine otherwise.
+
+![Quality report](docs/media/iuv_f3.png)
 
 ---
 
@@ -184,9 +197,10 @@ defaults do not fit.
   import, registration including a second
   `register()` call in the same session, the panel, the operators, the
   properties exposed in the UI and unregister.
-- Regression suite on 0.36.0: **68/0**, 0 failed (headless log, task
-  `iuv-robust-regression-1108-a`, 2026-11-08). The pipeline suite (13/13 on
-  0.35.1) was **not re-run** on 0.36.0 (see `VERIFICATION.md`).
+- Regression suite on 0.36.0: **68/0**, 0 failed (`.opencode/verdict.txt`,
+  task `iuv-robust-regression-1108-a`, run `20261108215801-bc565270`,
+  2026-11-08). The pipeline suite (13/13 on 0.35.1) was **not re-run** on
+  0.36.0 (see `VERIFICATION.md`).
 - UI probe: **88 unique static labels measured with `blf.dimensions`
   (flagged=0)** in Italian and English (deterministic layout probe,
   `ui_report.txt`: `UI_SUMMARY labels=88 flagged=0 region_width=561`).
@@ -335,10 +349,8 @@ establish. It is a factual record, not a legal opinion.
 
 Developed with AI assistance under the author's direction, review, and responsibility.
 
-## Known Limitations / Compatibility
+## Support / Report a Bug
 
-This addon targets Blender 4.2 and newer, with tests confirmed on Blender 5.2 LTS (Windows) and 4.2 in CI. The optional RizomUV integration relies on Windows-only Live Link and Lua Script features. For cross-platform compatibility, use the manual Export/Import workflow, which requires no external libraries.
-
-## Credits / Support / Report a Bug
-
-Authored by Pierfrancesco Diodato and licensed under GPL-3.0-or-later. For bug reports or feature requests, use GitHub Issues at https://github.com/PieroFra/intelligent_uv/issues. AI assistance is available for guidance, but final review and responsibility remain with the author. Please open issues with clear reproduction steps.
+For bug reports or feature requests, use GitHub Issues at
+https://github.com/PieroFra/intelligent_uv/issues. Please open issues with
+clear reproduction steps.
