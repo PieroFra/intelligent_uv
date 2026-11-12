@@ -205,7 +205,9 @@ def test_texture_sets():
                     "con preserve_scale=True i rapporti aree_after/aree_before "
                     "non sono uniformi: min={0} max={1}".format(min(ratios), max(ratios)))
                 factor = sum(ratios) / len(ratios)
-                assert factor <= 1.0 + 1e-9, (
+                # float32: su Blender 4.2 il fattore puo' risultare 1.0000000022059612;
+                # tolleranza 1e-6: il layout non viene ingrandito, solo rumore di precisione.
+                assert factor <= 1.0 + 1e-6, (
                     "con preserve_scale=True il fattore di scala deve essere <= 1: {0}".format(factor))
                 total_after_preserve_true = sum(areas_after.values())
             else:

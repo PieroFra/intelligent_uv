@@ -6,6 +6,7 @@ import json
 import math
 import os
 import sys
+import tempfile
 import time
 import traceback
 from types import SimpleNamespace
@@ -15,7 +16,7 @@ import bpy
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(ROOT))
 PACKAGE = os.path.basename(ROOT)
-OUTPUT = os.path.join(os.path.abspath(os.environ["TEMP"]),
+OUTPUT = os.path.join(os.path.abspath(tempfile.gettempdir()),
                       "intelligent_uv_native_baseline.json")
 RESULTS = []
 MEASUREMENTS = {}
@@ -358,8 +359,11 @@ if __name__ == "__main__":
                 test()
                 RESULTS.append({"test": test.__name__, "passed": True})
             except Exception:
+                tb = traceback.format_exc()
                 RESULTS.append({"test": test.__name__, "passed": False,
-                                "error": traceback.format_exc()})
+                                "error": tb})
+                print(f"{test.__name__}:")
+                print("".join(tb.strip().splitlines(keepends=True)[-8:]))
         with open(OUTPUT, "w", encoding="utf-8") as handle:
             json.dump(json_safe({"blender": bpy.app.version_string, "native_only": False,
                                   "methods": ["native", "smart_uv", "angle_based", "conformal"],

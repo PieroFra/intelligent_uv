@@ -93,7 +93,7 @@ def test_presets():
         # 4. list_presets: nomi senza estensione e senza duplicati, anche
         #    con cartella preset vuota.
         empty_dir = tempfile.mkdtemp(
-            prefix='iuv_preset_empty_', dir=os.environ.get('TEMP'))
+            prefix='iuv_preset_empty_', dir=tempfile.gettempdir())
         preset_file = os.path.join(empty_dir, 'Hard Surface.json')
         original_get = presets_mod.get_preset_dir
         try:

@@ -6,6 +6,7 @@ import json
 import math
 import os
 import sys
+import tempfile
 import traceback
 
 import bpy
@@ -13,7 +14,7 @@ import bpy
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(ROOT))
 PACKAGE = os.path.basename(ROOT)
-OUTPUT = os.path.join(os.path.abspath(os.environ['TEMP']),
+OUTPUT = os.path.join(os.path.abspath(tempfile.gettempdir()),
                       'intelligent_uv_sphere_meridian.json')
 REPORT = {}
 
