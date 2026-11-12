@@ -385,6 +385,12 @@ class SeamPlanner:
             if angle is not None and angle > max_mesh_angle:
                 max_mesh_angle = angle
 
+        # Smooth mesh (no dihedral above the estimator's hard-edge floor):
+        # no curvature cuts at all. Lowering the threshold to the sharpest
+        # angle would cut every edge of a sphere; the topological completion
+        # turns the regions into discs instead.
+        smooth_mesh = max_mesh_angle < CurvatureEstimator.HARD_EDGE_FLOOR_DEG
+
         for eidx in range(safe_len):
             face_list = faces_per_edge[eidx]
 
@@ -433,7 +439,7 @@ class SeamPlanner:
                 effective_threshold = min(effective_threshold, max_mesh_angle)
 
             # Epsilon keeps exact angles (e.g. a 90 degree cube) reliable.
-            if angle_deg >= effective_threshold - 1e-4:
+            if not smooth_mesh and angle_deg >= effective_threshold - 1e-4:
                 is_seam[eidx] = True
                 result.seam_edges.add(eidx)
                 angle_cut_count += 1

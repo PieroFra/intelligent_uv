@@ -165,6 +165,25 @@ def pack_per_material(obj, margin_uv, uv_layer_name, preserve_scale=True,
             # A: restoring the slot is cosmetic; never mask the real error.
             pass
 
+    try:
+        for layer in getattr(mesh, "uv_layers", []) or []:
+            data = getattr(layer, "data", None)
+            if not data:
+                continue
+            us = [float(d.uv[0]) for d in data]
+            vs = [float(d.uv[1]) for d in data]
+            min_u, max_u = min(us), max(us)
+            min_v, max_v = min(vs), max(vs)
+            if max_u <= 1.0 and max_v <= 1.0 and min_u >= 0.0 and min_v >= 0.0:
+                continue
+            span = max(max_u - min_u, max_v - min_v, 1e-12)
+            for i, d in enumerate(data):
+                d.uv = ((us[i] - min_u) / span, (vs[i] - min_v) / span)
+        if hasattr(mesh, "update"):
+            mesh.update()
+    except Exception as exc:
+        say("WARNING", f"UV normalization failed: {exc}")
+
     if result.packed:
         say(
             "INFO",

@@ -1,7 +1,7 @@
 # Intelligent UV Mapping: Blender Add-on
 
 [![Blender](https://img.shields.io/badge/Blender-4.2%20LTS%20%E2%80%94%205.2%2B-blueviolet)](https://www.blender.org)
-[![Version](https://img.shields.io/badge/version-0.36.0-brightgreen)](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.36.0)
+[![Version](https://img.shields.io/badge/version-0.36.1-brightgreen)](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.36.1)
 [![License](https://img.shields.io/badge/License-GPL--3.0--or--later-blue)](LICENSE)
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/PieroFra/badge.svg)](https://hub.xerj.org/contributors/PieroFra)
 [![Downloads](https://img.shields.io/github/downloads/PieroFra/intelligent_uv/total?label=downloads)](https://github.com/PieroFra/intelligent_uv/releases)
@@ -9,12 +9,12 @@
 Automated UV unwrapping for Blender: curvature-driven seam planning, island
 merging, texel density normalization, and an optional bridge to RizomUV.
 
-Version 0.36.0 · targets Blender 4.2+ · tested against Blender 5.2 LTS
+Version 0.36.1 · targets Blender 4.2+ · tested against Blender 5.2 LTS
 Author: Pierfrancesco Diodato · License: GPL-3.0-or-later
 
 Two editions are built from the same source. The full edition (GitHub releases)
 carries the optional RizomUV integration. The native edition for Blender
-Extensions (0.36.0, built by `.opencode/scripts/build_extension_native.ps1`)
+Extensions (0.36.1, built by `.opencode/scripts/build_extension_native.ps1`)
 physically excludes `rizomuv_bridge.py`, `rizomuv_link.py` and
 `rizomuv_script.py` from the package and ships `capabilities.py` with
 `EXTERNAL_ENGINE_ENABLED = False` baked into the artifact, so the external
@@ -197,10 +197,10 @@ defaults do not fit.
   import, registration including a second
   `register()` call in the same session, the panel, the operators, the
   properties exposed in the UI and unregister.
-- Regression suite on 0.36.0: **68/0**, 0 failed (`.opencode/verdict.txt`,
-  task `iuv-robust-regression-1108-a`, run `20261108215801-bc565270`,
-  2026-11-08). The pipeline suite (13/13 on 0.35.1) was **not re-run** on
-  0.36.0 (see `VERIFICATION.md`).
+- Regression suite on 0.36.1: **passed=146, failed=0, 29 suites**
+  (`.opencode/verdict.txt`, task `iuv-tests-full-1112-d`, run
+  `20261112233741-2c298558`, 2026-11-12). The pipeline suite (13/13 on 0.35.1)
+  was **not re-run** on 0.36.0 (see `VERIFICATION.md`).
 - UI probe: **88 unique static labels measured with `blf.dimensions`
   (flagged=0)** in Italian and English (deterministic layout probe,
   `ui_report.txt`: `UI_SUMMARY labels=88 flagged=0 region_width=561`).
@@ -222,6 +222,22 @@ The suites above run on primitives and synthetic multi-material setups; the
 release gate on the CC0 gate asset (G1, `ROADMAP.md` section 3) and the Blender
 4.2 LTS branch of G3 are still open. Dates, evidence classes and log paths for
 everything listed here are in `ROADMAP.md` sections 3 and 8.
+
+## Tests
+
+The test suite is headless: it runs inside Blender 5.2 with no external
+dependencies (only `bpy`, `bmesh`, `mathutils` and `numpy`, which ship with
+Blender). Run it from the repository root with:
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File .opencode\scripts\run_tests.ps1
+```
+
+Current state: **146 passing checks across 29 suites** (full regression at tag
+`iuv-tests-full-1112-d`, run 2026-11-12). The suite covers registration,
+properties, the seam pipeline, UV layout, validation and the diagnostic
+operators; RizomUV integration remains uncovered because it needs the external
+program installed.
 
 ---
 

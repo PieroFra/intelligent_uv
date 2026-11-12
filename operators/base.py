@@ -7,6 +7,7 @@ from ..margins import MarginCalculator
 from ..material_analysis import MaterialAnalyzer
 from ..mesh_analysis import MeshAnalyzer
 from .. import auto_params
+from ..curvature import CurvatureEstimator
 from .. import symmetry
 from ..preflight import Preflight
 from ..region_merge import RegionMerger, RegionSplitter
@@ -99,6 +100,32 @@ class IntelligentUVBaseOperator(bpy.types.Operator):
         )
 
         method = str(getattr(settings, "seam_method", "THRESHOLD") or "THRESHOLD")
+
+        # Shape clustering needs creases to grow around. When the Otsu break of
+        # the dihedral angles sits below the tolerance floor used by
+        # auto_params (12 deg), the tolerance is clamped to that floor and
+        # clustering shatters the surface (a UV sphere sits at ~11 deg
+        # everywhere), so the seam planner is used instead for this mesh.
+        # The P90-P10 spread is kept only as an informative note.
+        if method == 'VSA':
+            angles = auto_params._dihedral_angles(mesh_analysis)
+            try:
+                break_angle = CurvatureEstimator._otsu_threshold(angles)
+            except Exception:
+                break_angle = None
+            if break_angle is not None and break_angle < 12.0:
+                sorted_angles = sorted(angles)
+                last = len(sorted_angles) - 1
+                spread = (sorted_angles[int(round(0.9 * last))]
+                          - sorted_angles[int(round(0.1 * last))])
+                method = 'THRESHOLD'
+                self._report(
+                    "INFO",
+                    "Near-uniform dihedral angles (Otsu break {:.1f} deg below "
+                    "the 12.0 deg floor, P90-P10 spread {:.1f} deg): "
+                    "using the seam planner instead of shape clustering."
+                    .format(break_angle, spread)
+                )
 
         # Derive the clustering parameters from this mesh before planning with
         # them. Done here rather than in the UI because the margin is only

@@ -110,6 +110,16 @@ class CurvatureEstimator:
         Returns the threshold in degrees, or None when no valid split exists
         (single cluster: between-class variance never becomes positive).
         """
+        # Guard: None/empty/single-value inputs have no meaningful split, so avoid iterating over None or degenerate distributions (no crash).
+        if not angles:
+            return None
+        try:
+            distinct_values = len(set(angles))
+        except TypeError:
+            return None
+        if distinct_values < 2:
+            return None
+
         bins = cls.HISTOGRAM_BINS
         bin_width = 180.0 / bins
         histogram = [0] * bins

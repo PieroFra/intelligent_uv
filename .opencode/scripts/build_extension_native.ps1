@@ -13,7 +13,10 @@ $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $blender = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 if (-not (Test-Path -LiteralPath $blender)) { throw "Blender non trovato: $blender" }
 
-$version = '0.36.0'
+# Versione letta dal manifest del repo (fonte unica, niente cablaggio).
+$manRaw = Get-Content -LiteralPath (Join-Path $root 'blender_manifest.toml') -Raw
+if ($manRaw -notmatch '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"$') { throw 'Versione non trovata in blender_manifest.toml.' }
+$version = $Matches[1]
 $outZip = Join-Path $root "dist\intelligent_uv-$version-nativo-extension.zip"
 $outSha = Join-Path $root "dist\intelligent_uv-$version-nativo-extension.sha256"
 
@@ -95,8 +98,8 @@ try {
         if ($manZip -notmatch [regex]::Escape('tagline = "Curvature and shape-clustering UV unwrapping, Blender-only"')) {
             throw 'Manifest nello ZIP: tagline nativa mancante.'
         }
-        if ($manZip -notmatch '(?m)^version = "0\.36\.0"$') {
-            throw 'Manifest nello ZIP: versione non 0.36.0.'
+        if ($manZip -notmatch ('(?m)^version = "' + [regex]::Escape($version) + '"$')) {
+            throw "Manifest nello ZIP: versione non $version."
         }
         $entryCount = $names.Count
     }

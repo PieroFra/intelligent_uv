@@ -230,6 +230,144 @@ class MinimalUVExecutor:
         except Exception as exc:
             raise RuntimeError(f"Unable to select all faces: {exc}") from exc
 
+    @staticmethod
+    def _count_unsolved_islands(mesh, uv_layer):
+        """Counts UV islands whose unwrap collapsed to (near) zero area.
+
+        Blender's ``uv.unwrap`` returns ``FINISHED`` even when it could not
+        solve an island; the faces of that island come back with no UV area.
+        This counts the connected UV islands (faces sharing an un-cut edge)
+        whose total UV area is negligible compared to their 3D area.
+        Returns (unsolved_count, total_island_count).
+        """
+        polygons = getattr(mesh, "polygons", None)
+        loops = getattr(mesh, "loops", None)
+        if not polygons or not loops or uv_layer is None:
+            return 0, 0
+
+        face_count = len(polygons)
+        loop_count = len(loops)
+        data = getattr(uv_layer, "data", None)
+        if data is None or len(data) < loop_count:
+            return 0, 0
+
+        us = [0.0] * loop_count
+        vs = [0.0] * loop_count
+        for i in range(loop_count):
+            uv = data[i].uv
+            us[i] = float(uv[0])
+            vs[i] = float(uv[1])
+
+        loop_face = [-1] * loop_count
+        loop_next = [-1] * loop_count
+        face_loops = [[] for _ in range(face_count)]
+
+        for fidx, poly in enumerate(polygons):
+            start = int(getattr(poly, "loop_start", 0))
+            total = int(getattr(poly, "loop_total", 0))
+            for j in range(total):
+                li = start + j
+                if 0 <= li < loop_count:
+                    loop_face[li] = fidx
+                    face_loops[fidx].append(li)
+                    nxt = start + ((j + 1) % total)
+                    if 0 <= nxt < loop_count:
+                        loop_next[li] = nxt
+
+        face_area_3d = [0.0] * face_count
+        for fidx, poly in enumerate(polygons):
+            try:
+                face_area_3d[fidx] = float(getattr(poly, "area", 0.0))
+            except (AttributeError, TypeError, ValueError):
+                face_area_3d[fidx] = 0.0
+
+        # Group loops by mesh edge.
+        edge_loops = {}
+        for i in range(loop_count):
+            try:
+                eidx = int(loops[i].edge_index)
+            except (AttributeError, TypeError, ValueError):
+                eidx = -1
+            if eidx >= 0:
+                edge_loops.setdefault(eidx, []).append(i)
+
+        parent = list(range(face_count))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+
+        TOL_SQ = 1e-12
+
+        for lis in edge_loops.values():
+            n = len(lis)
+            for a in range(n):
+                fa = loop_face[lis[a]]
+                if fa < 0:
+                    continue
+                na = loop_next[lis[a]]
+                if na < 0:
+                    continue
+                a0 = (us[lis[a]], vs[lis[a]])
+                a1 = (us[na], vs[na])
+                for b in range(a + 1, n):
+                    fb = loop_face[lis[b]]
+                    if fb < 0 or fb == fa:
+                        continue
+                    nb = loop_next[lis[b]]
+                    if nb < 0:
+                        continue
+                    b0 = (us[lis[b]], vs[lis[b]])
+                    b1 = (us[nb], vs[nb])
+
+                    # Same cut orientation or reversed.
+                    d00 = (a0[0] - b0[0]) ** 2 + (a0[1] - b0[1]) ** 2
+                    d11 = (a1[0] - b1[0]) ** 2 + (a1[1] - b1[1]) ** 2
+                    d01 = (a0[0] - b1[0]) ** 2 + (a0[1] - b1[1]) ** 2
+                    d10 = (a1[0] - b0[0]) ** 2 + (a1[1] - b0[1]) ** 2
+
+                    if (d00 <= TOL_SQ and d11 <= TOL_SQ) or (
+                        d01 <= TOL_SQ and d10 <= TOL_SQ
+                    ):
+                        union(fa, fb)
+
+        # Connected components = UV islands.
+        components = {}
+        for fidx in range(face_count):
+            components.setdefault(find(fidx), []).append(fidx)
+
+        unsolved = 0
+        total = len(components)
+
+        for comp in components.values():
+            uv_area = 0.0
+            mesh_area = 0.0
+            for fidx in comp:
+                coords = [(us[li], vs[li]) for li in face_loops[fidx]]
+                m = len(coords)
+                if m >= 3:
+                    s = 0.0
+                    for i in range(m):
+                        u1, v1 = coords[i]
+                        u2, v2 = coords[(i + 1) % m]
+                        s += u1 * v2 - u2 * v1
+                    uv_area += abs(s) * 0.5
+                mesh_area += face_area_3d[fidx]
+
+            if mesh_area > 1e-12 and (
+                uv_area <= 1e-12 or (uv_area / mesh_area) < 1e-5
+            ):
+                unsolved += 1
+
+        return unsolved, total
+
     @classmethod
     def execute_unwrap(cls, obj, settings, margin_uv, use_seams=True):
         """
@@ -286,10 +424,26 @@ class MinimalUVExecutor:
                     except Exception as exc:
                         raise RuntimeError(f"Smart UV Project failed: {exc}") from exc
 
+        uv_layer = cls.get_uv_layer(mesh, uv_name)
+        unsolved_count, total_islands = cls._count_unsolved_islands(
+            mesh, uv_layer
+        )
+
+        if unsolved_count > 0:
+            warning = (
+                f"Unwrap failed to solve {unsolved_count} of "
+                f"{total_islands} island(s)."
+            )
+        else:
+            warning = ""
+
         return {
             "uv_layer": uv_name,
             "method": method_used,
             "margin_uv": island_margin,
+            "unsolved_islands": unsolved_count,
+            "islands_total": total_islands,
+            "warning": warning,
         }
 
 

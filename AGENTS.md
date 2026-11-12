@@ -30,7 +30,9 @@ build step. Non esiste una `actd_build\` e non va inventata.
 | RizomUV | `rizomuv_bridge`, `rizomuv_link`, `rizomuv_script` | import **lazy**, Windows-only |
 | capability | `capabilities.py` | `EXTERNAL_ENGINE_ENABLED` (bool fisso, `capabilities.py:8`) |
 
-- ~15.238 righe, 52 file `.py` (33 moduli radice + 10 in `operators\` + 9 test in `tests\`), conteggio da `dist\intelligent_uv-0.36.0.files.txt`.
+- ~15.238 righe, 52 file `.py` al conteggio del rilascio 0.36.0 (33 moduli radice + 10 in
+  `operators\` + 9 test in `tests\`, da `dist\intelligent_uv-0.36.0.files.txt`); la cartella
+  `tests\` ora contiene **29 file `.py`** (10 precedenti + 19 nuovi, conteggio reale 2026-11-12).
 - **Due edizioni dallo stesso sorgente.** L'edizione completa (GitHub) contiene l'integrazione
   RizomUV opzionale; l'edizione nativa per Blender Extensions (0.36.0, script
   `.opencode\scripts\build_extension_native.ps1`) **esclude fisicamente**
@@ -98,7 +100,13 @@ Lo smoke test copre import, registrazione, pannello, operatori, proprietà e unr
 - Il doppio `register()` è verificato: il check `doppio_register` dello smoke test richiama
   `register()` una seconda volta e controlla che `Scene.intelligent_uv_settings` sopravviva. Log
   `.opencode\tests\test_out.txt`: 14/14, 0 fallimenti. Restano scoperti pipeline UV e RizomUV.
-- RizomUV non è verificabile headless: serve il programma installato e un caso reale.
+- Regressione completa a tag `iuv-tests-full-1112-d` (run `20261112233741-2c298558`):
+  **passed=146, failed=0, 29 suite**. I test nuovi coprono: auto_params e curvature,
+  margini e utils, invarianti VSA, region merge, preset e semantica proprieta RNA,
+  layout UV dell'executor, validation, preflight, simmetria, orientamento, recovery,
+  stacking, build script Lua, capture/revert dell'anteprima, texture sets, operatori
+  diagnose e preview_ops. Restano scoperti RizomUV (non verificabile headless:
+  serve il programma installato e un caso reale).
 - Il packaging esiste: `.opencode\scripts\package_release.ps1` produce in `dist\` (gitignored)
   `intelligent_uv-0.36.0.zip`, il `.sha256` e la lista file (release GitHub
   `v0.36.0`). Il gate G3, cioè l'installazione pulita su configurazione vergine, è

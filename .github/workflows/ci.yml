@@ -2,10 +2,13 @@ name: CI
 
 # Headless CI for Intelligent UV Mapping.
 #
-# The add-on is a flat Python package: there is no build step. The test jobs
-# download the official Blender builds (LTS 4.2 and 5.2 lines) and run the two
-# headless suites that live in tests/. The package job runs the release
-# script and checks that the ZIP honours the packaging criteria.
+# The add-on is a flat Python package: there is no build step. The test job
+# downloads the official Blender builds (LTS 4.2 and 5.2 lines) and runs the
+# 29 headless suites that live in tests/. The package job runs the release
+# script and checks that the ZIP honours the packaging criteria (counts are
+# cross-checked against the PACKAGE report, not pinned). The native-gate job
+# builds the Blender-Extensions-only edition and runs the G3 native install
+# gate on a disposable profile.
 
 on:
   push:
@@ -21,9 +24,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Packaging contract: 41 modules (*.py) plus 4 user docs ship in the ZIP.
-  EXPECTED_PY: "41"
+  # Packaging contract: the user docs that ship in the ZIP. The .py count is
+  # NOT pinned here: it changes at every release and is cross-checked against
+  # the PACKAGE line emitted by package_release.ps1.
   EXPECTED_DOCS: "4"
+  EXPECTED_DOC_NAMES: "LICENSE README.md CHANGELOG.md THIRD_PARTY.md"
 
 jobs:
   blender-tests:
@@ -106,7 +111,19 @@ jobs:
           $ErrorActionPreference = 'Continue'
           New-Item -ItemType Directory -Force -Path 'ci-logs' | Out-Null
           $failed = New-Object System.Collections.Generic.List[string]
-          foreach ($suite in @('smoke_test', 'pipeline_test')) {
+          # 29 suite headless (2 preesistenti + 27 test_*), elencate in modo
+          # esplicito: nessun glob fragile su aggiunte o rimozioni future.
+          foreach ($suite in @(
+            'smoke_test', 'pipeline_test',
+            'test_auto_params', 'test_curvature_otsu', 'test_default_pipeline_sphere',
+            'test_lua_script', 'test_margins', 'test_native_capabilities',
+            'test_native_isolation', 'test_native_package_import', 'test_native_uv_baseline',
+            'test_operators_diagnose_preview', 'test_orientation', 'test_preflight',
+            'test_presets', 'test_preview', 'test_properties_semantics', 'test_recovery',
+            'test_region_merge', 'test_seam_planner_topology', 'test_seam_topology',
+            'test_sphere_meridian', 'test_stacking', 'test_symmetry', 'test_texture_sets',
+            'test_utils_math', 'test_uv_executor_layout', 'test_validation', 'test_vsa_cluster'
+          )) {
             $log = "ci-logs/blender-${{ matrix.blender }}-${{ runner.os }}-$suite.log"
             Write-Host "::group::$suite on Blender ${{ matrix.blender }}"
             $lines = & $env:BLENDER_BIN --factory-startup --background --python "tests/$suite.py" 2>&1 |
@@ -177,11 +194,15 @@ jobs:
           $py = [int]$Matches['py']
           $docs = [int]$Matches['docs']
           $files = [int]$Matches['files']
-          if ($py -ne [int]$env:EXPECTED_PY) { throw "Expected $env:EXPECTED_PY .py files, got $py" }
+          # Contract dinamico: i conteggi reali vengono dal report PACKAGE
+          # (lo staging conta i file, non c'e' nessun numero cablato). Il ZIP
+          # deve solo combaciare con lo staging.
+          if ($py -lt 1) { throw "PACKAGE report: no .py files staged (py=$py)" }
           if ($docs -ne [int]$env:EXPECTED_DOCS) { throw "Expected $env:EXPECTED_DOCS docs, got $docs" }
           if ($files -ne ($py + $docs)) { throw "Inconsistent file count: $files != $py + $docs" }
           Write-Host "Version ${version}: file=$files py=$py docs=$docs"
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "PY_STAGED=$py" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Verify archive contents and checksum
         shell: pwsh
@@ -215,8 +236,14 @@ jobs:
               ($_ -match '^intelligent_uv/[^/]+$') -and ($_ -notlike '*.py')
             }).Count
           Write-Host "ZIP ${version}: file=$($entries.Count) py=$py docs=$docs sha256=$actual"
-          if ($py -ne [int]$env:EXPECTED_PY) { throw "ZIP: expected $env:EXPECTED_PY .py files, got $py" }
+          # I conteggi del ZIP devono combaciare con il report PACKAGE: e'
+          # il controllo dinamico che sostituisce il vecchio EXPECTED_PY fisso.
+          if ($py -ne [int]$env:PY_STAGED) { throw "ZIP/staging mismatch: py=$py vs PACKAGE py=$env:PY_STAGED" }
           if ($docs -ne [int]$env:EXPECTED_DOCS) { throw "ZIP: expected $env:EXPECTED_DOCS docs, got $docs" }
+          foreach ($doc in $env:EXPECTED_DOC_NAMES -split ' ') {
+            $hit = @($entries | Where-Object { $_ -eq "intelligent_uv/$doc" })
+            if ($hit.Count -ne 1) { throw "ZIP: doc utente mancante o duplicato: $doc" }
+          }
 
           @(
             '### Release archive',
@@ -236,3 +263,89 @@ jobs:
             intelligent_uv/dist/*.files.txt
           if-no-files-found: error
           retention-days: 30
+
+  native-gate:
+    name: Native edition + G3 gate
+    runs-on: windows-latest
+    needs: blender-tests
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: intelligent_uv
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: intelligent_uv
+
+      # I due script del progetto richiedono il Blender alla temperatura
+      # inglese fissa C:\Program Files\Blender Foundation\Blender 5.2: lo
+      # installiamo esattamente li' (gli runner Windows sono amministratori).
+      - name: Restore Blender archive cache
+        id: blender-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/blender/5.2.3
+          key: blender-5.2.3-windows-x64-X64
+
+      - name: Download Blender 5.2.3
+        if: steps.blender-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $url = 'https://download.blender.org/release/Blender5.2/blender-5.2.3-windows-x64.zip'
+          $dest = Join-Path $env:RUNNER_TEMP 'blender/5.2.3'
+          $downloads = Join-Path $env:RUNNER_TEMP 'blender/_downloads'
+          New-Item -ItemType Directory -Force -Path $dest, $downloads | Out-Null
+          Write-Host "Download $url"
+          $file = Join-Path $downloads 'blender-5.2.3-windows-x64.zip'
+          Invoke-WebRequest -Uri $url -OutFile $file
+          tar -xf $file -C $dest
+          if ($LASTEXITCODE -ne 0) { throw 'Extraction failed: blender-5.2.3-windows-x64.zip' }
+          Remove-Item -LiteralPath $file -Force
+
+      - name: Install Blender at the fixed project path
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'blender/5.2.3'
+          $src = Get-ChildItem -LiteralPath $root -Recurse -Filter blender.exe | Select-Object -First 1
+          if (-not $src) { throw "Blender binary not found under $root" }
+          $targetDir = Split-Path $src.FullName # cartella contenente blender.exe
+          $destRoot = 'C:\Program Files\Blender Foundation\Blender 5.2'
+          New-Item -ItemType Directory -Force -Path $destRoot | Out-Null
+          Copy-Item -LiteralPath $targetDir\* -Destination $destRoot -Recurse -Force
+          & "$destRoot\blender.exe" --version 2>&1 | Select-Object -First 2 | ForEach-Object { Write-Host $_ }
+
+      - name: Build native (Blender Extensions only) edition
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $lines = & ./.opencode/scripts/build_extension_native.ps1 2>&1 |
+            ForEach-Object { $_.ToString() }
+          $code = $LASTEXITCODE
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($code -ne 0) { throw "build_extension_native.ps1 exited with $code" }
+          $zip = Get-ChildItem -LiteralPath dist -Filter '*-nativo-extension.zip' | Select-Object -First 1
+          if (-not $zip) { throw 'Native ZIP not produced in dist/' }
+          Write-Host "NATIVE_ZIP=$($zip.FullName)"
+          "NATIVE_ZIP=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      # Il gate G3 usa un profilo utente Blender isolato in TEMP (creato dallo
+      # script stesso via BLENDER_USER_RESOURCES): e' eseguibile in CI cosi'
+      # com'e'. Verifica install CLI + abilitazione + pannello headless.
+      - name: Run G3 native install gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $lines = & ./.opencode/scripts/gate_g3_native_install.ps1 -Zip $env:NATIVE_ZIP 2>&1 |
+            ForEach-Object { $_.ToString() }
+          $code = $LASTEXITCODE
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($code -ne 0) { throw "gate_g3_native_install.ps1 exited with $code" }
+          $verdict = $lines | Select-Object -Last 1
+          if ($verdict -notmatch '^G3_NATIVE OK') {
+            throw "G3 gate verdict not OK: $verdict"
+          }
+          Write-Host "G3 gate: $verdict"

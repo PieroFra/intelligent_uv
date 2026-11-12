@@ -1,6 +1,6 @@
 # Intelligent UV Mapping: Architecture (Developer Guide)
 
-This file is the developer-facing architecture note for the 0.36.0 tree: how the
+This file is the developer-facing architecture note for the 0.36.1 tree: how the
 pipeline is laid out, what every module owns, and the design decisions a
 contributor must know before changing things. The user-facing documentation
 lives in [README.md](README.md); the change history lives in

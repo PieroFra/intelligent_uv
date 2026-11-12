@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.36.1 - Unwrap-failure reporting, texture set UV coordinates, defensive Otsu and a larger test suite
+
+**Fixed**
+
+- Unwraps that Blender leaves unsolved are now detected and reported instead
+  of passing silently.
+- Texture sets now report UV coordinates inside the tile they belong to.
+- VSA clustering falls back to the seam planner on meshes with uniform
+  dihedral angles, where clustering yields no usable islands.
+- The Otsu threshold is now defensive (no crash on degenerate inputs), and
+  the threshold is no longer clamped on smooth meshes.
+
+**Changed**
+
+- Test suite grew from 9 to 29 suite files with **passed=146, failed=0**
+  (task `iuv-tests-full-1112-d`, run `20261112233741-2c298558`, 2026-11-12).
+
 ## 0.36.0 - Hardened _EnglishLayout proxy, dedicated Italian UI & Credits test suite, and aligned verification records
 
 **Fixed**

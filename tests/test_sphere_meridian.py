@@ -92,9 +92,15 @@ def test_sphere_meridian():
                                         location=(0, 0, 0))
     source = bpy.context.object
     before = topology(source.data)
-    source_seams = tuple(e.use_seam for e in source.data.edges)
     source_uv = tuple((layer.name, tuple(tuple(item.uv) for item in layer.data))
                       for layer in source.data.uv_layers)
+    assert len(source.data.vertices) == 482 and len(source.data.polygons) == 512, 'Fixture 32x16 inattesa'
+    fixture_seams = cap_ring_edges(source.data)
+    assert len(fixture_seams) == 64, 'Anelli dei cap assenti o incompleti'
+    # Mark the cap rings on the source mesh before copying, so the copies inherit them.
+    for index in fixture_seams:
+        source.data.edges[index].use_seam = True
+    source_seams = tuple(e.use_seam for e in source.data.edges)
     copies = []
     for name in ('original', 'meridian', 'automatic'):
         obj = source.copy()
@@ -105,9 +111,7 @@ def test_sphere_meridian():
     a, b, c = copies
     assert len({o.data.as_pointer() for o in copies}) == 3 and all(o.data is not source.data for o in copies), 'Mesh delle copie condivise'
     assert all(topology(o.data) == before for o in copies), 'Topologia delle copie differente'
-    assert len(source.data.vertices) == 482 and len(source.data.polygons) == 512, 'Fixture 32x16 inattesa'
-    fixture_seams = cap_ring_edges(source.data)
-    assert len(fixture_seams) == 64, 'Anelli dei cap assenti o incompleti'
+    assert all({i for i, e in enumerate(o.data.edges) if e.use_seam} == fixture_seams for o in copies), 'Seam dei cap non ereditate dalle copie'
     settings = bpy.context.scene.intelligent_uv_settings
     # Reset every writable setting to its RNA default. The scene is shared with
     # the other suites, so leftovers from a previous run would change the plan.

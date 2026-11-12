@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "intelligent_uv"
-version = "0.36.0"
+version = "0.36.1"
 name = "Intelligent UV Mapping"
 tagline = "Shape-clustering and curvature UV unwrapping with UDIM support"
 maintainer = "Pierfrancesco Diodato"
