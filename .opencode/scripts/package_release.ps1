@@ -38,6 +38,10 @@ $ExcludeNames = @(
     'agents.md', 'opencode.json', 'roadmap.md', '.gitignore', '.gitattributes',
     'thumbs.db', 'desktop.ini'
 )
+# Pattern a wildcard sul nome file: script di debug temporanei non devono
+# finire nel pacchetto (caso reale: tmp_inspect.py finito nello ZIP 0.36.0).
+$ExcludePatterns = @('tmp_*.py')
+
 $ExcludeExt = @(
     '.pyc', '.pyo', '.log', '.txt', '.ps1', '.png', '.jpg', '.jpeg', '.gif',
     '.blend', '.blend1', '.zip', '.rar', '.7z', '.tmp'
@@ -88,6 +92,10 @@ function Test-ExcludedRelPath {
 
     $leaf = $segments[$segments.Count - 1]
     if ($ExcludeNames -contains $leaf.ToLowerInvariant()) { return $true }
+
+    foreach ($pat in $ExcludePatterns) {
+        if ($leaf -like $pat) { return $true }
+    }
 
     $ext = [IO.Path]::GetExtension($leaf).ToLowerInvariant()
     if ($ExcludeExt -contains $ext) { return $true }

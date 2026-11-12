@@ -18,6 +18,7 @@ dist/
 
 # Output di test e probe (rigenerabili)
 *.log
+tmp_*.py
 
 # Log CI e output temporanei
 %TEMP%/

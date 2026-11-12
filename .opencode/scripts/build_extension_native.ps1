@@ -38,6 +38,11 @@ try {
     # 2. Ricomposizione in layout extension: __init__.py e i moduli alla radice.
     New-Item -ItemType Directory -Path $stage -Force | Out-Null
     Copy-Item (Join-Path $staging 'intelligent_uv\*') -Destination $stage -Recurse -Force
+    # L'edizione per Blender Extensions contiene solo il runtime: nessun test.
+    if (Test-Path -LiteralPath (Join-Path $stage 'tests')) {
+        Remove-Item -LiteralPath (Join-Path $stage 'tests') -Recurse -Force
+    }
+    if (Test-Path -LiteralPath (Join-Path $stage 'tests')) { throw 'NATIVO: la cartella tests e presente nello staging extension.' }
     # Il manifest dell'edizione nativa e' riscritto a partire da quello del repo:
     # tolta solo la chiave network (RizomUV e' assente), resta [permissions] files;
     # tagline senza riferimento al motore esterno. Il manifest del repo resta invariato.
@@ -78,6 +83,8 @@ try {
             throw 'Artefatto non valido: blender_manifest.toml non alla radice.'
         }
         if ($names -notcontains '__init__.py') { throw 'Artefatto non valido: __init__.py non alla radice.' }
+        $testsLeaks = @($names | Where-Object { $_ -match '(?i)(^|/)tests/' })
+        if ($testsLeaks.Count -gt 0) { throw 'tests/ nello ZIP: ' + ($testsLeaks -join ', ') }
         $leaks = @($names | Where-Object { $excluded -contains [IO.Path]::GetFileName($_) })
         if ($leaks.Count -gt 0) { throw 'RizomUV nello ZIP: ' + ($leaks -join ', ') }
         $capEntry = $zip.GetEntry('capabilities.py')

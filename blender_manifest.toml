@@ -1,7 +1,8 @@
 schema_version = "1.0.0"
 
 id = "intelligent_uv"
-version = "0.36.1"
+version = "0.36.2"
+changelog = "No debug scripts in the packages; native edition ships without the tests folder; no other functional changes."
 name = "Intelligent UV Mapping"
 tagline = "Shape-clustering and curvature UV unwrapping with UDIM support"
 maintainer = "Pierfrancesco Diodato"

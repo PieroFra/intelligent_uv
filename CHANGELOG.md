@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.36.2 - Packaging cleanup: no debug scripts, native edition without tests
+
+- Packaging only. Removed a temporary debug script that had leaked into the
+  0.36.0/0.36.1 packages, and excluded the `tests/` folder from the native
+  (Blender Extensions) edition, which now ships runtime files only.
+- No functional changes: the RizomUV modules remain excluded from the native
+  edition with `EXTERNAL_ENGINE_ENABLED = False`, and the full GitHub edition
+  is unchanged.
+
 ## 0.36.1 - Unwrap-failure reporting, texture set UV coordinates, defensive Otsu and a larger test suite
 
 **Fixed**
