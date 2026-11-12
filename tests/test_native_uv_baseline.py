@@ -200,9 +200,11 @@ def smart_uv_baseline(obj, source, original_mesh, before, settings, row, paramet
         assert bpy.ops.uv.smart_project(
             angle_limit=math.radians(66.0), island_margin=0.0, area_weight=0.0,
             correct_aspect=True, scale_to_bounds=False) == {'FINISHED'}, "Smart UV Project fallito"
-        assert bpy.ops.uv.pack_islands(
-            rotate=True, scale=True, margin_method='FRACTION',
-            margin=parameters["margin_uv"]) == {'FINISHED'}, "Pack Islands fallito"
+        with module("utils").uv_editor_override():
+            bpy.ops.uv.select_all(action='SELECT')
+            assert bpy.ops.uv.pack_islands(
+                rotate=True, scale=True, margin_method='FRACTION',
+                margin=parameters["margin_uv"]) == {'FINISHED'}, "Pack Islands fallito"
     finally:
         if obj.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -308,9 +310,11 @@ def unwrap_baseline(obj, source, original_mesh, before, settings, row,
                         method=method, fill_holes=True, correct_aspect=True,
                         use_subsurf_data=False, margin=0.0) == {'FINISHED'}, "Unwrap Blender fallito"
                 else:
-                    assert bpy.ops.uv.pack_islands(
-                        rotate=True, scale=True, margin_method='FRACTION',
-                        margin=parameters["margin_uv"]) == {'FINISHED'}, "Pack unwrap fallito"
+                    with module("utils").uv_editor_override():
+                        bpy.ops.uv.select_all(action='SELECT')
+                        assert bpy.ops.uv.pack_islands(
+                            rotate=True, scale=True, margin_method='FRACTION',
+                            margin=parameters["margin_uv"]) == {'FINISHED'}, "Pack unwrap fallito"
             finally:
                 row[stage + "_seconds"] = time.perf_counter() - started
         finally:
