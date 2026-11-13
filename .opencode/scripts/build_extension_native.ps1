@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $blender)) { throw "Blender non trovato: $blend
 
 # Versione letta dal manifest del repo (fonte unica, niente cablaggio).
 $manRaw = Get-Content -LiteralPath (Join-Path $root 'blender_manifest.toml') -Raw
-if ($manRaw -notmatch '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"$') { throw 'Versione non trovata in blender_manifest.toml.' }
+if ($manRaw -notmatch '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"\r?$') { throw 'Versione non trovata in blender_manifest.toml.' }
 $version = $Matches[1]
 $outZip = Join-Path $root "dist\intelligent_uv-$version-nativo-extension.zip"
 $outSha = Join-Path $root "dist\intelligent_uv-$version-nativo-extension.sha256"
