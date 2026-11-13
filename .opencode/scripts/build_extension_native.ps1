@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $blender)) { throw "Blender non trovato: $blend
 
 # Versione letta dal manifest del repo (fonte unica, niente cablaggio).
 $manRaw = Get-Content -LiteralPath (Join-Path $root 'blender_manifest.toml') -Raw
-if ($manRaw -notmatch '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"\r?$') { throw 'Versione non trovata in blender_manifest.toml.' }
+if ($manRaw -notmatch '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"') { throw 'Versione non trovata in blender_manifest.toml.' }
 $version = $Matches[1]
 $outZip = Join-Path $root "dist\intelligent_uv-$version-nativo-extension.zip"
 $outSha = Join-Path $root "dist\intelligent_uv-$version-nativo-extension.sha256"
@@ -47,8 +47,11 @@ try {
     # tolta solo la chiave network (RizomUV e' assente), resta [permissions] files;
     # tagline senza riferimento al motore esterno. Il manifest del repo resta invariato.
     $manifestSrc = Get-Content -LiteralPath (Join-Path $root 'blender_manifest.toml') -Raw
-    $manifestNative = $manifestSrc -replace '(?m)^tagline\s*=\s*".*"$',
+    $manifestNative = $manifestSrc -replace '(?m)^tagline[^\r\n]*\r?$',
         'tagline = "Curvature and shape-clustering UV unwrapping, Blender-only"'
+    if ($manifestNative -notmatch 'Blender-only"') {
+        throw 'Tagline nativa non applicata al manifest di staging.'
+    }
     $manifestNative = $manifestNative -replace '(?m)^network\s*=\s*"[^"]*"\r?\n?', ''
     $manifestNative = $manifestNative.TrimEnd() + "`r`n"
     if ($manifestNative -match 'RizomUV' -or $manifestNative -match '(?m)^network\s*=') {
@@ -110,7 +113,7 @@ try {
             Write-Output "MANIFEST_ZIP_HEAD: $head"
             throw 'Manifest nello ZIP: tagline nativa mancante.'
         }
-        if ($manZip -notmatch ('(?m)^version = "' + [regex]::Escape($version) + '"$')) {
+        if ($manZip -notmatch ('(?m)^version = "' + [regex]::Escape($version) + '"')) {
             throw "Manifest nello ZIP: versione non $version."
         }
         $entryCount = $names.Count
