@@ -68,6 +68,7 @@ try {
     }
 
     # 3. Build + validate via CLI Extensions di Blender.
+    New-Item -ItemType Directory -Path (Split-Path -Parent $outZip) -Force | Out-Null
     & $blender --background --factory-startup --command extension build --source-dir $stage --output-filepath $outZip
     if ($LASTEXITCODE -ne 0) { throw "extension build fallito ($LASTEXITCODE)" }
     & $blender --background --factory-startup --command extension validate $outZip
