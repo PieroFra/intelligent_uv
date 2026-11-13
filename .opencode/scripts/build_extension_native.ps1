@@ -103,7 +103,11 @@ try {
         if ($manZip -notmatch '(?m)^files = "Save presets and export or import FBX files for UV editing"\r?$') {
             throw 'Manifest nello ZIP: permission files mancante.'
         }
-        if ($manZip -notmatch [regex]::Escape('tagline = "Curvature and shape-clustering UV unwrapping, Blender-only"')) {
+        if ($manZip -notmatch 'Curvature and shape-clustering UV unwrapping, Blender-only') {
+            # Diagnostica: senza il contenuto reale non si distingue riscrittura
+            # del manifest da differenze di quoting tra versioni di Blender.
+            $head = $manZip.Substring(0, [Math]::Min(800, $manZip.Length))
+            Write-Output "MANIFEST_ZIP_HEAD: $head"
             throw 'Manifest nello ZIP: tagline nativa mancante.'
         }
         if ($manZip -notmatch ('(?m)^version = "' + [regex]::Escape($version) + '"$')) {
