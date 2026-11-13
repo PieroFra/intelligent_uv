@@ -322,10 +322,10 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $lines = & ./.opencode/scripts/build_extension_native.ps1 2>&1 |
-            ForEach-Object { $_.ToString() }
+          # Output in streaming: se lo script throwa, i log di Blender restano visibili.
+          & ./.opencode/scripts/build_extension_native.ps1 2>&1 |
+            ForEach-Object { Write-Host $_ }
           $code = $LASTEXITCODE
-          $lines | ForEach-Object { Write-Host $_ }
           if ($code -ne 0) { throw "build_extension_native.ps1 exited with $code" }
           $zip = Get-ChildItem -LiteralPath dist -Filter '*-nativo-extension.zip' | Select-Object -First 1
           if (-not $zip) { throw 'Native ZIP not produced in dist/' }
