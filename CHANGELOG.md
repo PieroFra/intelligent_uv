@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.36.3 - Planar cut for smooth regions instead of the angular mosaic fallback
+
+- `RegionSplitter.split` now closes smooth regions (regions with
+  `max_angle < 30 degrees`) with a clean planar cut on the region mid-plane.
+  The previous angular fallback was cutting one segment at a time, producing a
+  mosaic-like fragmentation on spheres and other curved surfaces; the planar
+  cut yields one coherent seam per region.
+- `test_default_pipeline_sphere.py` asserts are tightened: the smooth-sphere
+  pipeline must now produce 1 to 4 islands and 1 to 64 seam edges, and fails
+  outside those bounds.
+- No other functional changes: seam marking, UV execution and the RizomUV
+  bridge are untouched.
+
 ## 0.36.2 - Packaging cleanup: no debug scripts, native edition without tests
 
 - Packaging only. Removed a temporary debug script that had leaked into the

@@ -489,23 +489,70 @@ class RegionSplitter:
                 continue
 
             region_added = 0
-            for threshold in cls.FALLBACK_THRESHOLDS:
-                for angle, eidx in scored:
-                    if angle >= threshold and not is_seam[eidx]:
-                        is_seam[eidx] = True
-                        region_added += 1
 
-                if region_added:
-                    break
+            # On a smooth surface without creases (max dihedral < 30 deg) the
+            # fallback thresholds cut hundreds of edges at random. Prefer a clean
+            # planar cut along the region's largest extent instead.
+            max_angle = max(angle for angle, _ in scored)
+            face_centers = getattr(mesh_analysis, "face_centers", None) or []
+            covers_region = bool(face_centers) and all(
+                0 <= fidx < len(face_centers) for fidx in faces
+            )
 
-            if not region_added:
-                # Nothing bends even slightly: a perfect tube. Cut the single
-                # sharpest ring of edges available so the solver has an opening.
-                scored.sort(reverse=True)
-                for _angle, eidx in scored[: max(1, len(scored) // 20)]:
-                    if not is_seam[eidx]:
-                        is_seam[eidx] = True
-                        region_added += 1
+            if max_angle < 30.0 and covers_region:
+                xs = [float(face_centers[f][0]) for f in faces]
+                ys = [float(face_centers[f][1]) for f in faces]
+                zs = [float(face_centers[f][2]) for f in faces]
+                center = (
+                    sum(xs) / len(xs),
+                    sum(ys) / len(ys),
+                    sum(zs) / len(zs),
+                )
+                exts = [
+                    max(xs) - min(xs),
+                    max(ys) - min(ys),
+                    max(zs) - min(zs),
+                ]
+                axis = 2
+                for cand in (1, 0):
+                    if exts[cand] > exts[axis] + 1e-4:
+                        axis = cand
+                mid = center[axis]
+
+                for eidx, f1, f2 in edges:
+                    if not (
+                        0 <= f1 < len(face_centers)
+                        and 0 <= f2 < len(face_centers)
+                    ):
+                        continue
+                    c1 = float(face_centers[f1][axis])
+                    c2 = float(face_centers[f2][axis])
+                    if (c1 >= mid and c2 < mid) or (c2 >= mid and c1 < mid):
+                        if not is_seam[eidx]:
+                            is_seam[eidx] = True
+                            region_added += 1
+
+            # Fall back to the original threshold behaviour when the planar cut
+            # did not produce any seam (or was not applicable).
+            if region_added == 0:
+                region_added = 0
+                for threshold in cls.FALLBACK_THRESHOLDS:
+                    for angle, eidx in scored:
+                        if angle >= threshold and not is_seam[eidx]:
+                            is_seam[eidx] = True
+                            region_added += 1
+
+                    if region_added:
+                        break
+
+                if not region_added:
+                    # Nothing bends even slightly: a perfect tube. Cut the single
+                    # sharpest ring of edges available so the solver has an opening.
+                    scored.sort(reverse=True)
+                    for _angle, eidx in scored[: max(1, len(scored) // 20)]:
+                        if not is_seam[eidx]:
+                            is_seam[eidx] = True
+                            region_added += 1
 
             if region_added:
                 added += region_added

@@ -1,8 +1,8 @@
 schema_version = "1.0.0"
 
 id = "intelligent_uv"
-version = "0.36.2"
-changelog = "No debug scripts in the packages; native edition ships without the tests folder; no other functional changes."
+version = "0.36.3"
+changelog = "Smooth regions (max_angle < 30) are now cut with a clean planar split on the mid-plane instead of the angular fallback, removing mosaic fragmentation on spheres and curved surfaces; stricter sphere pipeline asserts."
 name = "Intelligent UV Mapping"
 tagline = "Shape-clustering and curvature UV unwrapping with UDIM support"
 maintainer = "Pierfrancesco Diodato"

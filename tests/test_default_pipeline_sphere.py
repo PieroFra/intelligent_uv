@@ -105,19 +105,23 @@ def test_default_pipeline_sphere():
         # A uniform sphere has dihedral angles of about 11 degrees between
         # adjacent faces (P90-P10 spread well under 5 degrees), so the run
         # must leave shape clustering and use the seam planner. The planner
-        # yields a few disc regions, not dozens of fragments. Documented
-        # limits for sphere 32x16 (radius 0.7): islands between 1 and 20,
-        # border seams between 1 and 150. The old VSA limits (about 131
-        # clusters and 537 seams) must not come back.
+        # yields a few disc regions, not dozens of fragments. A smooth
+        # closed sphere must be opened into two hemispheres by a clean
+        # equatorial seam ring instead of being fragmented, so the result
+        # stays compact: islands between 1 and 4, border seams between 1
+        # and 64. The old VSA limits (about 131 clusters and 537 seams)
+        # and the provisional limits (20 islands / 150 seams) must not
+        # come back.
         assert seam_keys, "Nessuna seam marcata sulla sfera 32x16"
-        assert border_seams <= 150, (
-            "Seam marcate {} > 150 su sfera 32x16 (radius 0.7): "
-            "il planner dovrebbe lasciarne poche.".format(border_seams)
+        assert 1 <= border_seams <= 64, (
+            "Seam marcate {} fuori da [1, 64] su sfera 32x16 (radius 0.7): "
+            "una sfera chiusa liscia va aperta in 2 emisferi da un anello "
+            "equatoriale pulito.".format(border_seams)
         )
-        assert clusters >= 1, "Nessuna isola UV dopo il run sulla sfera"
-        assert clusters <= 20, (
-            "Isole UV {} > 20 su sfera 32x16 (radius 0.7): "
-            "il planner dovrebbe produrre poche regioni disco.".format(clusters)
+        assert 1 <= clusters <= 4, (
+            "Isole UV {} fuori da [1, 4] su sfera 32x16 (radius 0.7): "
+            "una sfera chiusa liscia va aperta in 2 emisferi da un anello "
+            "equatoriale pulito.".format(clusters)
         )
     finally:
         addon.IntelligentUV_OT_Run._report = original_report
