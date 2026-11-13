@@ -12,9 +12,11 @@ merging, texel density normalization, and an optional bridge to RizomUV.
 Version 0.36.3 · targets Blender 4.2+ · tested against Blender 5.2 LTS
 Author: Pierfrancesco Diodato · License: GPL-3.0-or-later
 
-Two editions are built from the same source. The full edition (GitHub releases)
-carries the optional RizomUV integration. The native edition for Blender
-Extensions (0.36.3, built by `.opencode/scripts/build_extension_native.ps1`)
+Two editions are built from the same source. The full edition, which carries
+the optional RizomUV integration, is distributed through GitHub Releases
+(v0.36.3); it is not distributed on Blender Extensions for this version. The
+native edition for Blender Extensions (0.36.3, built by
+`.opencode/scripts/build_extension_native.ps1`)
 physically excludes `rizomuv_bridge.py`, `rizomuv_link.py` and
 `rizomuv_script.py` from the package and ships `capabilities.py` with
 `EXTERNAL_ENGINE_ENABLED = False` baked into the artifact, so the external
