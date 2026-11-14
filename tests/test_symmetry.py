@@ -125,6 +125,65 @@ def test_symmetry():
     finally:
         bpy.data.meshes.remove(mesh)
 
+    # --- Quad (cilindro) con seam su un solo spigolo verticale +X ---
+    mesh = make_cylinder()
+    try:
+        analysis = MeshAnalyzer.analyze(mesh)
+        assert analysis.ok, 'Analisi del cilindro (quad) fallita'
+        axis, coverage, face_mirror = symmetry.detect_symmetry(analysis)
+        assert axis == 0, 'Cilindro quad: asse X atteso'
+        assert coverage >= 0.8, 'Cilindro quad: copertura troppo bassa'
+
+        def _midpoint(eidx):
+            verts = analysis.edge_vertices[eidx]
+            p0 = analysis.vertex_positions[verts[0]]
+            p1 = analysis.vertex_positions[verts[1]]
+            return tuple((p0[k] + p1[k]) * 0.5 for k in range(3))
+
+        # Spigolo verticale sul semispazio +X: punto medio con x massimo.
+        pos_edge = None
+        neg_edge = None
+        for eidx in range(len(analysis.edge_vertices)):
+            mid = _midpoint(eidx)
+            verts = analysis.edge_vertices[eidx]
+            p0 = analysis.vertex_positions[verts[0]]
+            p1 = analysis.vertex_positions[verts[1]]
+            vertical = (abs(p0[0] - p1[0]) < 1e-9
+                        and abs(p0[1] - p1[1]) < 1e-9
+                        and abs(p0[2] - p1[2]) > 0.5)
+            if not vertical:
+                continue
+            if mid[0] > 0.9 and (pos_edge is None or mid[0] > _midpoint(pos_edge)[0]):
+                pos_edge = eidx
+            if mid[0] < -0.9 and (neg_edge is None or mid[0] < _midpoint(neg_edge)[0]):
+                neg_edge = eidx
+        assert pos_edge is not None, 'Nessuno spigolo verticale +X trovato'
+        assert neg_edge is not None, 'Nessuno spigolo verticale -X trovato'
+
+        # build_edge_mirror deve accoppiare pos_edge a neg_edge per posizione.
+        em = symmetry.build_edge_mirror(analysis, face_mirror, axis=axis)
+        assert pos_edge in em, 'build_edge_mirror non ha accoppiato lo spigolo +X'
+        assert em[pos_edge] == neg_edge, (
+            'build_edge_mirror ha accoppiato +X a uno spigolo diverso da -X'
+        )
+
+        # Seam solo sul singolo spigolo +X: apply deve specchiarlo su -X
+        # senza aggiungere seam extra.
+        initial_mask = [False] * len(mesh.edges)
+        initial_mask[pos_edge] = True
+        settings = SimpleNamespace(symmetry_min_coverage=0.8)
+        fresh_analysis = MeshAnalyzer.analyze(mesh)
+        assert fresh_analysis.ok, 'Rianalisi fallita'
+        mask = list(initial_mask)
+        result = symmetry.apply(fresh_analysis, mask, settings, report=None)
+        assert result.found, 'apply non ha trovato la simmetria'
+        assert result.seams_added == 1, 'apply ha aggiunto seam extra'
+        assert mask[neg_edge] is True, 'Seam non specchiata su -X'
+        added = [i for i, (b, a) in enumerate(zip(initial_mask, mask)) if a and not b]
+        assert added == [neg_edge], 'Seam specchiata su spigolo non corrispondente'
+    finally:
+        bpy.data.meshes.remove(mesh)
+
     # --- Mesh asimmetrica: nessun asse credibile ---
     mesh = make_asymmetric()
     try:

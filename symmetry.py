@@ -156,7 +156,7 @@ def detect_symmetry(mesh_analysis, tolerance=None, min_coverage=0.8):
     return best_axis, best_coverage, best_map
 
 
-def build_edge_mirror(mesh_analysis, face_mirror):
+def build_edge_mirror(mesh_analysis, face_mirror, axis=None):
     """
     Edge to mirrored edge, derived from the face pairing.
 
@@ -167,7 +167,35 @@ def build_edge_mirror(mesh_analysis, face_mirror):
     faces_per_edge = getattr(mesh_analysis, "faces_per_edge", None) or []
     edges_per_face = getattr(mesh_analysis, "edges_per_face", None) or []
     edge_lengths = getattr(mesh_analysis, "edge_lengths", None) or []
+    vertex_positions = getattr(mesh_analysis, "vertex_positions", None) or []
+    edge_vertices = getattr(mesh_analysis, "edge_vertices", None) or []
 
+    has_positions = (
+        axis is not None
+        and len(vertex_positions) > 0
+        and len(edge_vertices) > 0
+    )
+
+    def _midpoint(eidx):
+        if not (0 <= eidx < len(edge_vertices)):
+            return None
+        verts = edge_vertices[eidx]
+        if not verts or len(verts) < 2:
+            return None
+        v0 = verts[0]
+        v1 = verts[1]
+        if not (0 <= v0 < len(vertex_positions)
+                and 0 <= v1 < len(vertex_positions)):
+            return None
+        p0 = vertex_positions[v0]
+        p1 = vertex_positions[v1]
+        return (
+            (float(p0[0]) + float(p1[0])) * 0.5,
+            (float(p0[1]) + float(p1[1])) * 0.5,
+            (float(p0[2]) + float(p1[2])) * 0.5,
+        )
+
+    claimed = set()
     edge_mirror = {}
 
     for eidx, face_list in enumerate(faces_per_edge):
@@ -181,22 +209,47 @@ def build_edge_mirror(mesh_analysis, face_mirror):
 
         length = edge_lengths[eidx] if eidx < len(edge_lengths) else 0.0
 
-        # Among the mirrored face's edges, the partner is the one of matching
-        # length that is not already claimed.
         best = -1
-        best_error = float("inf")
+        best_score = float("inf")
+        best_length_error = float("inf")
+
+        src_mid = _midpoint(eidx) if has_positions else None
 
         for candidate in edges_per_face[dst_face]:
-            if candidate in edge_mirror.values():
+            if candidate in claimed:
                 continue
-            other = edge_lengths[candidate] if candidate < len(edge_lengths) else 0.0
-            error = abs(other - length)
-            if error < best_error:
-                best_error = error
+            other = (edge_lengths[candidate]
+                     if candidate < len(edge_lengths) else 0.0)
+            length_error = abs(other - length)
+
+            # Length guard: reject candidates whose length differs too much.
+            if length > 1e-12 and length_error > 0.02 * length:
+                continue
+
+            if has_positions and src_mid is not None:
+                cand_mid = _midpoint(candidate)
+                if cand_mid is not None:
+                    mirrored = list(src_mid)
+                    mirrored[axis] = -mirrored[axis]
+                    score = (
+                        (mirrored[0] - cand_mid[0]) ** 2
+                        + (mirrored[1] - cand_mid[1]) ** 2
+                        + (mirrored[2] - cand_mid[2]) ** 2
+                    ) ** 0.5
+                else:
+                    score = length_error
+            else:
+                score = length_error
+
+            if score < best_score:
+                best_score = score
+                best_length_error = length_error
                 best = candidate
 
-        if best >= 0 and (length <= 1e-12 or best_error <= 0.02 * length):
+        if best >= 0 and (length <= 1e-12
+                          or best_length_error <= 0.02 * length):
             edge_mirror[eidx] = best
+            claimed.add(best)
 
     return edge_mirror
 
@@ -292,7 +345,7 @@ def apply(mesh_analysis, is_seam, settings, report=None):
     result.axis_name = AXIS_NAMES[axis]
     result.mirrored_faces = len(face_mirror)
 
-    edge_mirror = build_edge_mirror(mesh_analysis, face_mirror)
+    edge_mirror = build_edge_mirror(mesh_analysis, face_mirror, axis=axis)
 
     if not edge_mirror:
         if report:
