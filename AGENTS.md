@@ -7,9 +7,9 @@ documento dice il contrario, vale questo.
 
 ## 0. Dove siamo
 
-- Workspace: `C:\Users\checc\Desktop\BLENDER ADDONS\` — **una cartella per addon**.
-- Progetto: `C:\Users\checc\Desktop\BLENDER ADDONS\intelligent_uv\`
-- Backup: `G:\Il mio Drive\ADDON BLENDER\intelligent_uv\ULTIMA\`
+- Workspace: `..\` — **una cartella per addon**.
+- Progetto: `.` (questa cartella)
+- Backup: `Drive esterno` (copertura opzionale, fuori dal repository)
 - Mappa del workspace: `..\00-INDICE.md`
 
 Qui la cartella del progetto **è** l'addon: package Python piatto, nessun monolite, nessun
