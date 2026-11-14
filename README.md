@@ -28,6 +28,13 @@ engine is absent, not merely disabled.
 
 [Watch the 1080p 60fps MP4 showcase](https://raw.githubusercontent.com/PieroFra/intelligent_uv/main/docs/media/intelligent_uv_demo_v0.35.1.mp4)
 
+**v0.36.3 demo video (16:9):**
+[Watch intelligent_uv_0363_16x9.mp4](https://github.com/PieroFra/intelligent_uv/releases/download/v0.36.3/intelligent_uv_0363_16x9.mp4)
+
+<video src="https://github.com/PieroFra/intelligent_uv/releases/download/v0.36.3/intelligent_uv_0363_16x9.mp4" controls width="100%"></video>
+
+Credits: 3D Model: Damaged Helmet by theblueturtle_ (CC-BY 4.0)
+
 ![Intelligent UV sidebar panel](docs/images/01-sidebar-intelligent-uv.png)
 *Sidebar panel of the addon (View3D > Intelligent UV tab).*
 
