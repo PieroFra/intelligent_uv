@@ -25,9 +25,10 @@ engine is absent, not merely disabled.
 ## Demo
 
 **v0.36.3 demo video (16:9):**
-[Watch intelligent_uv_0363_16x9.mp4](https://github.com/PieroFra/intelligent_uv/releases/download/v0.36.3/intelligent_uv_0363_16x9.mp4)
 
-<video src="https://github.com/PieroFra/intelligent_uv/releases/download/v0.36.3/intelligent_uv_0363_16x9.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/01327fa9-2383-42e1-8653-909fab2f58db
+
+[Download the v0.36.3 Release](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.36.3)
 
 Credits: 3D Model: Damaged Helmet by theblueturtle_ (CC-BY 4.0)
 
