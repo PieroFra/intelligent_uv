@@ -24,10 +24,6 @@ engine is absent, not merely disabled.
 
 ## Demo
 
-![Intelligent UV demo](docs/media/intelligent_uv_demo_v0.35.1.gif)
-
-[Watch the 1080p 60fps MP4 showcase](https://raw.githubusercontent.com/PieroFra/intelligent_uv/main/docs/media/intelligent_uv_demo_v0.35.1.mp4)
-
 **v0.36.3 demo video (16:9):**
 [Watch intelligent_uv_0363_16x9.mp4](https://github.com/PieroFra/intelligent_uv/releases/download/v0.36.3/intelligent_uv_0363_16x9.mp4)
 
@@ -35,17 +31,9 @@ engine is absent, not merely disabled.
 
 Credits: 3D Model: Damaged Helmet by theblueturtle_ (CC-BY 4.0)
 
-![Intelligent UV sidebar panel](docs/images/01-sidebar-intelligent-uv.png)
-*Sidebar panel of the addon (View3D > Intelligent UV tab).*
-
-![UV checker result](docs/images/02-uv-checker-result.png)
-*Render of the checker scene after the UV pipeline run.*
-
 ---
 
 ## What It Does
-
-![Pipeline preview](docs/media/iuv_f1.png)
 
 - **One-click unwrap with a non-destructive preview.** A single button runs the
   whole pipeline: analysis, seam planning, unwrap, packing and the quality
@@ -65,8 +53,6 @@ Credits: 3D Model: Damaged Helmet by theblueturtle_ (CC-BY 4.0)
   total area, so every object ends at the same density instead of each getting
   its own.
 
-![Batch texel density](docs/media/iuv_f2.png)
-
 - **Texture sets and UDIM multi-tile packing.** Give each material its own
   image on the shared 0-1 space, or spread the layout across UDIM tiles (1001,
   1002, 1003...) in one continuous UV space. Tile assignment is verified
@@ -83,8 +69,6 @@ Credits: 3D Model: Damaged Helmet by theblueturtle_ (CC-BY 4.0)
     installs without the Python API.
   - **Auto** uses the Live Link when available and falls back to the Lua
     Script engine otherwise.
-
-![Quality report](docs/media/iuv_f3.png)
 
 ---
 
