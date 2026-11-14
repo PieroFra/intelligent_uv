@@ -26,7 +26,7 @@ engine is absent, not merely disabled.
 
 **v0.36.3 demo video (16:9):**
 
-https://github.com/user-attachments/assets/01327fa9-2383-42e1-8653-909fab2f58db
+https://github.com/user-attachments/assets/c66db9fe-29cb-4989-8cb7-426010e7efd8
 
 [Download the v0.36.3 Release](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.36.3)
 
