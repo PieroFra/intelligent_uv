@@ -118,32 +118,63 @@ Lo smoke test copre import, registrazione, pannello, operatori, proprietà e unr
 ## 5. Squadra
 
 I ruoli sono **globali**, in `~\.config\opencode\agents\`: un'unica copia per tutti gli addon
-(squadra Fuoriclasse, aggiornata 10/2026). Questo progetto li specializza con i fatti di questo
+(squadra Fuoriclasse, aggiornata 2026-11-18). Questo progetto li specializza con i fatti di questo
 file (tabella Verifica) e con i permessi di `opencode.json` riguardanti `ops` e `publisher`.
 
-Ruoli e modelli (squadra a pagamento sul provider managed di OpenCode aka Zen, fatturata a token,
-attiva dal 2026-10-26 dopo l'esaurimento dei limiti gratuiti):
-- `architetto` (+ `architetto-riserva` su OpenRouter): Gemini 4 Argon via Vertex AI, piano e
+Ruoli e modelli (configurazione reale del 2026-11-18, `~\.config\opencode\agents\*.md`;
+prezzi OpenRouter per 1M token in/out):
+- `architetto`: `google-vertex/gemini-4-argon#low` (2/10, coperto dal bonus Google Cloud), piano e
   deleghe con tag, non tocca file; risposta nella struttura Stato / Piano / Deleghe / Prossimo passo.
-- `architetto-free`: Claude Haiku 5.5 #low (`opencode/claude-haiku-5-5#low`, unico modello paid a
-  basso costo; forza tutti i subagenti sui modelli *-free di Zen e ollama locali a 0 €).
-- `coder`: `openrouter/reflection/beam-1.0-501b-a23b` (OpenRouter, dal 2026-11-10: canary patch 6/6, tool call e ciclo agentico reale verificati su `_esperimenti`) - patch chirurgiche su `*.py` e test headless.
-- `tester`: `opencode/deepseek-v4.1-flash#low` (online: il gate reale).
-- `repo-ops`: `opencode/deepseek-v4.1-flash#low` - test, docs, packaging, esperimenti documentati.
-- `esploratore`: `opencode/qwen3.8-flash` (Zen, paid, file `esploratore.md`) - solo `_esperimenti\`, risultati non-gate.
-- `visualizzatore`: `google-vertex/gemini-4-argon#low` - probe UI deterministico, Vision nativa.
-- `composer`: `google-vertex/gemini-4-argon#low` - composizione e montaggio asset visivi.
-- `scenografo`: `opencode/deepseek-v4.1-flash#low` - prepara i `.blend` da registrare.
-- `publisher`: `opencode/glm-5.3-flash` (Zen, paid) - per la verifica visiva si affida al visualizzatore o alla
-  variante Vision su OpenRouter (richiede chiave).
-- `revisore`: `opencode/deepseek-v4.1-flash#low` (`revisore.md`) - rilegge le patch del coder, solo lettura.
-- `diagnostico`: `opencode/deepseek-v4.1-flash#low` -
-  localizza la causa radice dei bug (file:righe) con `grep`/`read` e verifica la riproduzione
-  headless; sola lettura, risposta in 3 righe.
-- `traduttore`: `openrouter/openai/gpt-6-luna` (solo testo).
-- `ops-offline`: `ollama/nemotron-bolt-e4b-q8:actd`.
-- `coder-offline`: `ollama/mimo-v2.6-9b-q8:actd`.
-- `architetto-offline`: `ollama/qwen35-9b-q8:actd`.
+- `coder`: `openrouter/deepseek/deepseek-v4.1-flash-1017#low` (0.036/0.50) - patch chirurgiche su
+  `*.py` e test headless; escalation `reflection/beam-1.0-501b-a23b` (0.30/1.00) solo su bug
+  multi-file che il flash non chiude.
+- `tester`: `openrouter/deepseek/deepseek-v4.1-flash-1017#low` (online: il gate reale).
+- `ops` (repo-ops): `openrouter/z-ai/glm-5.3-flash#low` (0.15/0.50) - test, docs, packaging.
+- `esploratore`: `openrouter/deepseek/deepseek-v4.1-flash-1017#low` (file `esploratore.md`) - solo
+  `_esperimenti\`, risultati non-gate.
+- `tutor`: `openrouter/openai/gpt-6-luna` (0.10/0.50) - lezioni sul rig, sola lettura sul `.blend`.
+  Scelto il 2026-11-18 contro `claude-haiku-5.5` e `muse-ember` su una domanda larga a parita' di
+  limite di righe: glossa i termini tra parentesi, domanda socratica mirata, niente preamboli.
+- `rig-tester`: `openrouter/deepseek/deepseek-v4.1-flash-1017#low` - ispezione 5 strati e
+  stress test non distruttivi via `rig_inspect.py`.
+- `rig-viewer`: `openrouter/inclusionai/ling-3.2-flash:free` - cattura PNG per stage e descrizione visiva.
+- `visualizzatore`: `openrouter/inclusionai/ling-3.2-flash:free` - probe UI deterministico, Vision nativa.
+  Il `ling-3.2-flash` a pagamento non esiste: c'e' solo la variante `:free` (1M ctx, text+image, tools),
+  verificata il 2026-11-18 (visione su PNG e probe UI `labels=88 flagged=0`). Se il tier gratuito
+  risponde 429 nei momenti di punta, il ripiego e' `openrouter/inclusionai/ling-3.0-flash-vl`
+  (0.06/0.18, vision + video, 131k ctx), gia' presente nel catalogo di `opencode.json`.
+- `composer`: `google-vertex/gemini-4-carbon` (2/10, coperto dal bonus) - composizione e montaggio
+  asset visivi; alternativa a costo 20x inferiore: `openrouter/meta/muse-ember#low`.
+- `scenografo`: `openrouter/inclusionai/ling-3.1-flash` (0.045/0.135) - prepara i `.blend` da registrare.
+- `publisher`: `openrouter/anthropic/claude-haiku-5.5` (0.10/0.50) - prepara `docs/PROMO.md` e
+  `docs/FEEDBACK.md` e pubblica via Chrome CDP con la regola Prepare & Hand-off.
+- `revisore`: `openrouter/deepseek/deepseek-v4.1-flash-1017#low` (`revisore.md`) - rilegge le patch
+  del coder, solo lettura.
+- `diagnostico`: `openrouter/deepseek/deepseek-v4.1-flash-1017#low` - localizza la causa radice dei
+  bug (file:righe) con `grep`/`read` e verifica la riproduzione headless; sola lettura, 3 righe.
+- `traduttore`: `openrouter/openai/gpt-6-luna` (0.10/0.50).
+- `consulente-finanziario`: `openrouter/openai/gpt-6-luna` - fuori dal ciclo addon.
+
+Modelli locali (`llamacpp`, server su `127.0.0.1:11435`, `--models-max 1`: un solo modello in VRAM
+alla volta, scarico dopo 180 s di inattivita'; preset e comandi collaudati in
+`~\.config\opencode\docs\modelli-locali.md`):
+- `coder-offline`: `llamacpp/ornith-1.5-9b-q6k` (Ornith-1.5 9B Q6_K, 49k ctx, multimodale).
+- `architetto-offline`: `llamacpp/mimo-v2.6-9b-q8` (MiMo-V2.6 9B Q8, 49k ctx).
+- `ops-offline`: `llamacpp/nemotron-bolt-e4b-q8` (Nemotron 3.5 Bolt E4B Q8, 65k ctx).
+- Il provider `ollama` in `opencode.json` resta configurato ma nessun agente lo usa: senza processo
+  `ollama` attivo non risponde, e gli agenti offline puntano tutti a `llamacpp`.
+
+Squadra ibrida (online + locale). Il tier non si sceglie per ruolo ma per compito: il **locale** fa il
+volume meccanico a costo zero (`coder-offline` per patch gia' decise e test gia' specificati,
+`ops-offline` per allineamenti di doc/config/changelog), l'**online** fa il giudizio (`coder` per
+progettare una patch o un bug a causa ignota, `tester` per il gate, `visualizzatore`/`rig-viewer`
+per l'immagine, `publisher` per l'esterno). L'architetto ha la tabella di routing completa in
+`~\.config\opencode\agents\architetto.md`.
+Un agente `*-offline` che non chiude il compito **non insiste**: chiude con
+`OFFLINE_NEED_ONLINE | motivo=<una riga> | tentato=<cosa ha provato>` e l'architetto ridà lo stesso
+incarico al gemello online con quella riga come contesto. Limiti reali: `--models-max 1` (un solo
+modello in VRAM, due deleghe offline in parallelo si serializzano) e la VRAM disponibile, che impone
+49k ctx sui 9B Q8/Q6 e 65k solo su Nemotron E4B.
 
 - Il Coder scrive solo i `.py` del package; non tocca `.opencode\` né i `.md`.
 - Il Repo-Ops scrive test, documentazione e `.opencode\`, mai il codice dell'addon.
@@ -170,7 +201,10 @@ attiva dal 2026-10-26 dopo l'esaurimento dei limiti gratuiti):
   gate a tag), `release-addon` (bump versione, changelog, packaging, zip+sha256), `audit-docs`
   (doc sincere rispetto al codice), `preset-compatible` (proprieta utente non rimosse o
   rinominate), `triage-feedback` (feedback -> proposte ROADMAP), `sessione-inventario`
-  (handoff di fine sessione in `.opencode\handoff\`).
+  (handoff di fine sessione in `.opencode\handoff\`), `rig-level-audit` (voto del rig in 30esimi
+  su 30 controlli misurati, con `scripts\rig_space_audit.py`), `blender-motion-state-inspection`
+  (stato numerico di pose, contatto al suolo, retargeting), `rig-readonly-suite`,
+  `rig-stress-suite`, `rig-script-generator` (suite e script di test rig non distruttivi).
 - Le due skill di cattura chiudono con un gate deterministico:
   `~\.config\opencode\scripts\gif_check.py` (puro stdlib, `--selftest` incluso) boccia
   i GIF neri, statici, senza loop o oltre 10 MB **prima** di spendere token di vision.
