@@ -84,6 +84,7 @@ corresponding gates for this release.
 | Gate | Verdict |
 |---|---|
 | G1 smoke + regression on 0.36.0 | **PASS**, 2026-11-08 (14/14 smoke, 68/0 regression, task `iuv-robust-regression-1108-a`, run `20261108215801-bc565270`) |
-| G3 clean install of the native extension | **PASS**, `G3_NATIVE OK` on `dist/intelligent_uv-0.36.0-nativo-extension.zip` (SHA-256 `9dd0ccc55c23a93e13e4c1849f468e53eb6691ea29470b347579128fbf594f33`) |
-| G2 manual RizomUV round trip on 0.36.0 | **NOT RE-RUN** (0.35.1 evidence: PASS, 2026-10-23) |
+| G3 clean install of the native extension | **PASS**, `G3_NATIVE OK` on `dist/intelligent_uv-0.36.3-nativo-extension.zip` (SHA-256 `b0b278016c0adb9e7142315a9fb23a30cb225b924cd6d36efe9cb9c85a1345ec`, 2026-11-26, zero `ExternalEngine` / `rizomuv_*` residues in ZIP) |
+| G2 RizomUV round trip on 0.36.3 (`feat/0.37-gate-catchup`) | **PASS**, 2026-11-26, Blender 5.2 + RizomUV 2025.0.117 (Link mode): `Suzanne` 500/500 faces, 1968/1968 loops, 0 unmatched; `Cube` 6/6 faces, 24/24 loops, 0 unmatched; all UVs finite in `[0,1]`, `unfold_failed_islands = 0` |
+| B3/B4 regression + Native baseline (2026-11-26, Blender 5.2) | **PASS**: `run_tests.ps1` 14/14, `test_native_uv_baseline.py` 3/3, `run_ui_probe.ps1` 88/0 (`flagged=0`), `test_overlap_containment.py` 5/5, `test_curvature_otsu.py` 9/9, `test_auto_params.py` 11/11 |
 | Pipeline suite on 0.36.0 | **NOT RE-RUN** (0.35.1 evidence: 13/13, 2026-10-25) |

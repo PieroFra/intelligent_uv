@@ -12,6 +12,8 @@ import os
 import sys
 import traceback
 
+import bpy
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(ROOT))
 PACKAGE = os.path.basename(ROOT)
@@ -164,6 +166,78 @@ def test_describe_unisce_le_note():
     assert 'min cluster' in params.describe(), 'Nota cluster assente'
 
 
+def _drop(obj):
+    if obj is None:
+        return
+    mesh = getattr(obj, 'data', None)
+    try:
+        if obj.name in bpy.data.objects:
+            bpy.data.objects.remove(obj, do_unlink=True)
+    except Exception:
+        pass
+    if mesh is not None:
+        try:
+            if mesh.users == 0 and mesh.name in bpy.data.meshes:
+                bpy.data.meshes.remove(mesh)
+        except Exception:
+            pass
+
+
+def test_crease_weight_bimodale_sotto_30_resta_zero():
+    module = auto_params()
+    low = [2.0 + 0.01 * i for i in range(50)]
+    mid = [20.0 + 0.05 * i for i in range(50)]
+    params = module.derive(mesh_from_angles(low + mid))
+    assert 12.0 <= params.tolerance < 20.0, (
+        f'Tolerance attesa tra 12 e 20 su bimodale [2..22.45], ottenuta {params.tolerance}')
+    assert params.crease_weight == 0.0, (
+        f'Crease weight atteso 0.0 sotto {module.CREASE_ANGLE} deg, ottenuto {params.crease_weight}')
+
+
+def test_crease_weight_confine_30_gradi():
+    module = auto_params()
+    below = module.derive(mesh_from_angles([5.0] * 40 + [29.0] * 10))
+    at_edge = module.derive(mesh_from_angles([5.0] * 40 + [30.0] * 10))
+    assert below.crease_weight == 0.0, (
+        f'29 deg e sotto CREASE_ANGLE=30, atteso crease_weight=0.0, ottenuto {below.crease_weight}')
+    assert at_edge.crease_weight == 2.0, (
+        f'20% di spigoli a 30 deg deve dare crease_weight=2.0, ottenuto {at_edge.crease_weight}')
+
+
+def test_derive_su_mesh_blender_reale_sotto_30():
+    module = auto_params()
+    MeshAnalyzer = importlib.import_module(PACKAGE + '.mesh_analysis').MeshAnalyzer
+    sphere = cyl = None
+    try:
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, radius=1.0)
+        sphere = bpy.context.active_object
+        sphere_ma = MeshAnalyzer.analyze(sphere.data)
+        assert sphere_ma.ok, 'MeshAnalyzer.analyze fallito sulla sfera UV'
+        sphere_angles = module._dihedral_angles(sphere_ma)
+        assert sphere_angles and 0.0 < max(sphere_angles) < 15.0, (
+            f'Angoli inattesi sulla sfera UV: {max(sphere_angles) if sphere_angles else None}')
+        sphere_params = module.derive(sphere_ma)
+        assert sphere_params.crease_weight == 0.0, (
+            f'Sfera liscia deve dare crease_weight=0.0, ottenuto {sphere_params.crease_weight}')
+        assert sphere_params.tolerance == 12.0, (
+            f'Sfera liscia deve dare tolerance=12.0, ottenuta {sphere_params.tolerance}')
+
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=32, radius=1.0, depth=2.0, end_fill_type='NGON'
+        )
+        cyl = bpy.context.active_object
+        cyl_ma = MeshAnalyzer.analyze(cyl.data)
+        assert cyl_ma.ok, 'MeshAnalyzer.analyze fallito sul cilindro'
+        cyl_params = module.derive(cyl_ma)
+        assert cyl_params.crease_weight == 2.0, (
+            f'Cilindro con tappi a 90 deg deve dare crease_weight=2.0, ottenuto {cyl_params.crease_weight}')
+        assert cyl_params.tolerance == 50.0, (
+            f'Cilindro deve dare tolerance=50.0, ottenuta {cyl_params.tolerance}')
+    finally:
+        _drop(cyl)
+        _drop(sphere)
+
+
 if __name__ == '__main__':
     passed = failed = 0
     tests = [
@@ -175,12 +249,17 @@ if __name__ == '__main__':
         test_min_cluster_e_ceiling_da_risoluzione,
         test_senza_margine_dichiarato_nei_default,
         test_describe_unisce_le_note,
+        test_crease_weight_bimodale_sotto_30_resta_zero,
+        test_crease_weight_confine_30_gradi,
+        test_derive_su_mesh_blender_reale_sotto_30,
     ]
     for test in tests:
         try:
             test()
             passed += 1
-        except Exception:
+            print(f'CHECK {test.__name__} PASS')
+        except Exception as exc:
             failed += 1
+            print(f'CHECK {test.__name__} FAIL {type(exc).__name__}: {exc}')
             traceback.print_exc()
     print(f'RISULTATO passati={passed} falliti={failed} totale={len(tests)}')

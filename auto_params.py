@@ -114,7 +114,7 @@ def derive(mesh_analysis, margin_result=None, settings=None):
     # that is smooth nearly everywhere the pull drags the border somewhere
     # arbitrary instead, which is worse than leaving it straight.
     if angles:
-        creased = sum(1 for a in angles if a >= CREASE_ANGLE)
+        creased = sum(1 for a in angles if a >= CREASE_ANGLE - 1e-6)
         presence = creased / float(len(angles))
         params.crease_weight = round(
             2.0 * min(1.0, presence / CREASE_PRESENCE_FULL), 2

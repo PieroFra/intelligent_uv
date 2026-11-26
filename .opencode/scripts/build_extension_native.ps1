@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 # Build della Blender Extension "edizione nativa" (solo Blender, motore esterno
 # disattivato e moduli RizomUV fisicamente assenti). Riutilizza package_release.ps1
@@ -60,8 +60,56 @@ try {
     [IO.File]::WriteAllText((Join-Path $stage 'blender_manifest.toml'), $manifestNative,
         (New-Object System.Text.UTF8Encoding($false)))
 
+    # 2b. Pulizia completa di ogni residuo RizomUV / ExternalEngine nello staging nativo
+    #     (requisito Blender Extensions: nessun EXE picker, nessun ExternalEngine, nessun import
+    #     a rizomuv_bridge / rizomuv_link / rizomuv_script). Il sorgente del repo resta intatto.
+    $extOp = Join-Path $stage 'operators\external.py'
+    if (Test-Path -LiteralPath $extOp) { Remove-Item -LiteralPath $extOp -Force }
+
+    # operators/run.py: rimuove import e base class ExternalEngineMixin, stub _start_external -> None
+    $runPath = Join-Path $stage 'operators\run.py'
+    $runTxt = [IO.File]::ReadAllText($runPath)
+    $runTxt = $runTxt -replace '(?m)^from \.external import ExternalEngineMixin\r?\n', ''
+    $runTxt = $runTxt -replace '(?m)^\s*ExternalEngineMixin,\r?\n', ''
+    $runTxt = $runTxt -replace '(?m)^(\s*# Modal state for the external engine\r?\n)', "    def _start_external(self, context, state, already_modal=False):`r`n        return None`r`n`r`n`$1"
+    [IO.File]::WriteAllText($runPath, $runTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    # manual_io.py: rimuove import rizomuv_bridge e lettura rizomuv_path
+    $mioPath = Join-Path $stage 'manual_io.py'
+    $mioTxt = [IO.File]::ReadAllText($mioPath)
+    $mioTxt = $mioTxt -replace '(?s)def _bridge\(\):.*?return RizomUVBridge\r?\n', "def _bridge():`r`n    return None`r`n"
+    $mioTxt = $mioTxt -replace '(?s)def open_in_rizomuv\(settings, filepath\):.*?(?=\r?\n\r?\ndef )', "def open_in_rizomuv(settings, filepath):`r`n    return False, `"Manual external launch is not available in the Blender-only edition.`""
+    $mioTxt = $mioTxt -replace '(?m)^.*rizomuv_bridge.*\r?\n', ''
+    [IO.File]::WriteAllText($mioPath, $mioTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    # properties.py: rimuove proprieta' RizomUV (incluso rizomuv_path EXE picker)
+    $propPath = Join-Path $stage 'properties.py'
+    $propTxt = [IO.File]::ReadAllText($propPath)
+    $propTxt = $propTxt -replace '(?s)\r?\n    use_rizomuv: bpy\.props\.BoolProperty\(.*?\r?\n    \)', ''
+    $propTxt = $propTxt -replace '(?s)\r?\n    rizomuv_engine_mode: bpy\.props\.EnumProperty\(.*?\r?\n    \)', ''
+    $propTxt = $propTxt -replace '(?s)\r?\n    link_optimize: bpy\.props\.BoolProperty\(.*?\r?\n    \)', ''
+    $propTxt = $propTxt -replace '(?s)\r?\n    link_keep_open: bpy\.props\.BoolProperty\(.*?\r?\n    \)', ''
+    $propTxt = $propTxt -replace '(?s)\r?\n    rizomuv_path: bpy\.props\.StringProperty\(.*?\r?\n    \)', ''
+    $propTxt = $propTxt -replace '(?s)\r?\n    rizomuv_args: bpy\.props\.StringProperty\(.*?\r?\n    \)', ''
+    $propTxt = $propTxt -replace '(?s)\r?\n    rizomuv_timeout: bpy\.props\.IntProperty\(.*?\r?\n    \)', ''
+    $propTxt = $propTxt -replace '(?s)\r?\n    keep_temp_files: bpy\.props\.BoolProperty\(.*?\r?\n    \)', ''
+    [IO.File]::WriteAllText($propPath, $propTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    # ui.py: rimuove box External Editor (rizomuv_path) e blocco use_rizomuv / rizomuv_link
+    $uiPath = Join-Path $stage 'ui.py'
+    $uiTxt = [IO.File]::ReadAllText($uiPath)
+    $uiTxt = $uiTxt -replace '(?s)\r?\n        # RizomUV round trip: export, work by hand, import\..*?icon=''FILEBROWSER'',\r?\n        \)', ''
+    $uiTxt = $uiTxt -replace '(?s)\r?\n        col\.separator\(\)\r?\n        col\.prop\(settings, "use_rizomuv"\).*$', "`r`n"
+    [IO.File]::WriteAllText($uiPath, $uiTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    # __init__.py: rimuove menzione rizomuv_bridge dalla docstring
+    $initPath = Join-Path $stage '__init__.py'
+    $initTxt = [IO.File]::ReadAllText($initPath)
+    $initTxt = $initTxt -replace '(?m)^.*rizomuv_bridge.*\r?\n', ''
+    [IO.File]::WriteAllText($initPath, $initTxt, (New-Object System.Text.UTF8Encoding($false)))
+
     # Autoverifica del layout nativo nello staging.
-    $excluded = @('rizomuv_bridge.py', 'rizomuv_link.py', 'rizomuv_script.py')
+    $excluded = @('rizomuv_bridge.py', 'rizomuv_link.py', 'rizomuv_script.py', 'external.py')
     foreach ($m in $excluded) {
         if (Test-Path -LiteralPath (Join-Path $stage $m)) { throw "NATIVO: $m presente nello staging extension." }
     }
@@ -115,6 +163,20 @@ try {
         }
         if ($manZip -notmatch ('(?m)^version = "' + [regex]::Escape($version) + '"')) {
             throw "Manifest nello ZIP: versione non $version."
+        }
+        # Audit statico su tutti i .py nello ZIP: zero residui ExternalEngine / rizomuv_*
+        $forbiddenPattern = 'ExternalEngine|rizomuv_bridge|rizomuv_link|rizomuv_script|rizomuv_path|rizomuv_exe'
+        $badHits = @()
+        foreach ($e in $zip.Entries) {
+            if ($e.FullName -notlike '*.py') { continue }
+            $sr = New-Object IO.StreamReader($e.Open(), [Text.Encoding]::UTF8)
+            try { $pyContent = $sr.ReadToEnd() } finally { $sr.Dispose() }
+            if ($pyContent -match $forbiddenPattern) {
+                $badHits += "$($e.FullName): matched '$($Matches[0])'"
+            }
+        }
+        if ($badHits.Count -gt 0) {
+            throw ('NATIVO AUDIT FAIL — residui RizomUV/ExternalEngine nello ZIP: ' + ($badHits -join '; '))
         }
         $entryCount = $names.Count
     }

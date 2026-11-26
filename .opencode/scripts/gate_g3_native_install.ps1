@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Zip = ''
 )
 
@@ -20,7 +20,14 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $blender = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 if (-not (Test-Path -LiteralPath $blender)) { throw "Blender non trovato: $blender" }
-if (-not $Zip) { $Zip = Join-Path $root 'dist\intelligent_uv-0.36.0-nativo-extension.zip' }
+if (-not $Zip) {
+    $manRaw = Get-Content -LiteralPath (Join-Path $root 'blender_manifest.toml') -Raw
+    if ($manRaw -match '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"') {
+        $Zip = Join-Path $root ("dist\intelligent_uv-{0}-nativo-extension.zip" -f $Matches[1])
+    } else {
+        $Zip = Join-Path $root 'dist\intelligent_uv-0.36.0-nativo-extension.zip'
+    }
+}
 if (-not (Test-Path -LiteralPath $Zip)) { throw "Artefatto nativo assente: $Zip" }
 
 $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
