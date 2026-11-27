@@ -1,7 +1,7 @@
 # Intelligent UV Mapping: Blender Add-on
 
 [![Blender](https://img.shields.io/badge/Blender-4.2%20LTS%20%E2%80%94%205.2%2B-blueviolet)](https://www.blender.org)
-[![Version](https://img.shields.io/badge/version-0.36.3-brightgreen)](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.36.3)
+[![Version](https://img.shields.io/badge/version-0.39.0-brightgreen)](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.39.0)
 [![License](https://img.shields.io/badge/License-GPL--3.0--or--later-blue)](LICENSE)
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/PieroFra/badge.svg)](https://hub.xerj.org/contributors/PieroFra)
 [![Downloads](https://img.shields.io/github/downloads/PieroFra/intelligent_uv/total?label=downloads)](https://github.com/PieroFra/intelligent_uv/releases)
@@ -9,26 +9,29 @@
 Automated UV unwrapping for Blender: curvature-driven seam planning, island
 merging, texel density normalization, and an optional bridge to RizomUV.
 
-Version 0.36.3 · targets Blender 4.2+ · tested against Blender 5.2 LTS
+Version 0.39.0 · targets Blender 4.2+ · tested against Blender 5.2 LTS
 Author: Pierfrancesco Diodato · License: GPL-3.0-or-later
 
 Two editions are built from the same source. The full edition, which carries
 the optional RizomUV integration, is distributed through GitHub Releases
-(v0.36.3); it is not distributed on Blender Extensions for this version. The
-native edition for Blender Extensions (0.36.3, built by
+(v0.39.0); it is not distributed on Blender Extensions for this version. The
+native edition for Blender Extensions (0.39.0, built by
 `.opencode/scripts/build_extension_native.ps1`)
-physically excludes `rizomuv_bridge.py`, `rizomuv_link.py` and
-`rizomuv_script.py` from the package and ships `capabilities.py` with
-`EXTERNAL_ENGINE_ENABLED = False` baked into the artifact, so the external
-engine is absent, not merely disabled.
+physically excludes `rizomuv_bridge.py`, `rizomuv_link.py`,
+`rizomuv_script.py` and `manual_io.py` from the package, strips every
+RizomUV mention from the UI, comments and docstrings, ships `capabilities.py`
+with `EXTERNAL_ENGINE_ENABLED = False` baked into the artifact, and fails the
+build unless a forensic scan of every `.py` and `.toml` inside the ZIP finds
+zero occurrences of RizomUV, `subprocess` or external-launcher references. The
+external engine is absent, not merely disabled.
 
 ## Demo
 
-**v0.36.3 demo video (16:9):**
+**Demo video (16:9):**
 
 https://github.com/user-attachments/assets/c66db9fe-29cb-4989-8cb7-426010e7efd8
 
-[Download the v0.36.3 Release](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.36.3)
+[Download the v0.39.0 Release](https://github.com/PieroFra/intelligent_uv/releases/tag/v0.39.0)
 
 Credits: 3D Model: Damaged Helmet by theblueturtle_ (CC-BY 4.0)
 
@@ -46,6 +49,17 @@ Credits: 3D Model: Damaged Helmet by theblueturtle_ (CC-BY 4.0)
   average, so seams follow the real structure of the surface instead of a raw
   angle threshold. Creases are preferred, material boundaries count, and
   regions that cannot flatten are opened along a shortest path.
+- **Distortion-guided relief cuts.** When a region's UV layout pinches, the
+  pipeline adds one extra cut on the highest-distortion path instead of
+  shipping a folded island; a reproducible benchmark (`tools/benchmark_uv.py`,
+  development tooling, not shipped in the add-on) measures the layout quality
+  across releases.
+- **Quad-strip island straightening.** Quad strips come out of the Native
+  pipeline aligned instead of staggered, so the layout reads cleanly on
+  hard-surface assets.
+- **Overlap detection without the false positives.** Islands that merely touch
+  along a shared border or a seam are no longer flagged; true containment and
+  edge-crossing overlaps stay detected.
 - **Seam pinning in Edit Mode.** Seams placed by hand survive the pipeline
   instead of being overwritten, and the operators are guarded against being
   invoked in Edit Mode.
@@ -75,7 +89,7 @@ Credits: 3D Model: Damaged Helmet by theblueturtle_ (CC-BY 4.0)
 
 ## Installation
 
-Install the release ZIP (`intelligent_uv-0.36.0.zip`, attached to the v0.36.0
+Install the release ZIP (`intelligent_uv-0.39.0.zip`, attached to the v0.39.0
 release on the GitHub releases page) through **Edit > Preferences > Add-ons >
 Install from Disk**, or copy the `intelligent_uv` folder into your Blender
 `scripts/addons` directory. The panel appears in the 3D View sidebar (N) under the
@@ -101,8 +115,9 @@ tab. The whole workflow is in that panel:
    **Preview** runs the same pipeline but keeps the result pending until you
    press **Apply** or **Discard**; while a preview waits, the panel offers only
    those two buttons.
-3. **RizomUV bridge / manual round trip** (optional). The **External Editor**
-   box holds the RizomUV path, **Export & Open** (writes the FBX, with the
+3. **RizomUV bridge / manual round trip** (optional, full edition only; the
+   Blender Extensions edition is Blender-only and has no External Editor box).
+   The **External Editor** box holds the RizomUV path, **Export & Open** (writes the FBX, with the
    planned seams traveling inside it as island borders, then launches RizomUV),
    **Import** (reads the UVs back from whichever of the two expected files is
    newer, no dialog) and **Import from...** (file browser for any other
@@ -206,7 +221,10 @@ defaults do not fit.
   native (Blender Extensions) ZIP on a clean profile and asserts the extension
   enables, the panel and the run operator register, and no `rizomuv_*` module
   is present. Its verdict is the final line, `G3_NATIVE OK | ...` or
-  `G3_NATIVE FAIL | ...`.
+  `G3_NATIVE FAIL | ...`. Since 0.39.0 the native build itself also refuses to
+  produce a ZIP unless a forensic scan of every `.py` and `.toml` inside it
+  finds zero occurrences of RizomUV, `subprocess`, external-editor or
+  external-launcher references.
 - **RizomUV automated bridge, 2026-10-25**: the operator exercised **Auto**,
   **Live Link** and **Lua Script** in a real desktop session on Blender 5.2.0
   LTS with RizomUV 2025.0.117, with the headless `pipeline_link_bridge_contract`

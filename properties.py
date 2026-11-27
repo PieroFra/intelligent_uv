@@ -117,6 +117,18 @@ class IntelligentUVProperties(bpy.types.PropertyGroup):
         max=500,
     )
 
+    distortion_relief_cuts: bpy.props.BoolProperty(
+        name="Distortion Relief Cuts",
+        description="Automatically add interior relief seams on high-stretch islands before packing",
+        default=True,
+    )
+
+    straighten_quad_strips: bpy.props.BoolProperty(
+        name="Straighten Quad Strips",
+        description="Rectify quad-grid and cylindrical strip UV islands before packing",
+        default=True,
+    )
+
     use_udim: bpy.props.BoolProperty(
         name="UDIM Tiles",
         description=(

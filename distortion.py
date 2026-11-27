@@ -602,6 +602,38 @@ class DistortionAnalyzer:
 
         return False
 
+    _BOUNDARY_EPSILON = 1e-6
+
+    @staticmethod
+    def _point_on_boundary(point, segments, tol=None):
+        """
+        True when `point` lies on one of the boundary segments.
+
+        Shared-seam coordinates come from the same mesh edges, so touching
+        islands meet at bitwise-identical coordinates; the tolerance only
+        absorbs rounding from the UV pipeline.
+        """
+        if tol is None:
+            tol = DistortionAnalyzer._BOUNDARY_EPSILON
+
+        x, y = point
+
+        for p, q in segments:
+            if (min(p[0], q[0]) - tol > x or max(p[0], q[0]) + tol < x
+                    or min(p[1], q[1]) - tol > y or max(p[1], q[1]) + tol < y):
+                continue
+
+            cross = (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0])
+            seg_len = math.hypot(q[0] - p[0], q[1] - p[1])
+            if seg_len <= tol:
+                dist = math.hypot(x - p[0], y - p[1])
+            else:
+                dist = abs(cross) / seg_len
+            if dist <= tol:
+                return True
+
+        return False
+
     @staticmethod
     def _point_in_boundary(point, segments):
         """
@@ -609,7 +641,17 @@ class DistortionAnalyzer:
 
         Edge crossing alone misses one containment case: an island lying
         entirely inside another's outline without the borders touching.
+
+        A point sitting exactly on the boundary is reported as outside. Two
+        islands flush along a shared seam put their probe vertices on the
+        other's outline, and the ray cast from such a point is parity noise
+        (from a left-border point the ray crosses the whole island and reads
+        "inside"). Touching is packing, not overlap; only strictly interior
+        points count as containment.
         """
+        if DistortionAnalyzer._point_on_boundary(point, segments):
+            return False
+
         x, y = point
         crossings = 0
 

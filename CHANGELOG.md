@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.39.0 - Relief cuts, quad-strip straightening, overlap false-positive fix, clean Native ZIP
+
+**Added**
+
+- Distortion-guided relief cuts: regions whose UV layout pinches get an extra
+  cut on the highest-distortion path, with reproducible benchmark tooling
+  (`tools/benchmark_uv.py`).
+- Quad-strip UV island straightening in the Native pipeline.
+
+**Fixed**
+
+- Overlap detection no longer flags islands that merely touch along shared
+  borders or seams: the containment probe of `DistortionAnalyzer` now reads
+  on-boundary points as outside, while true containment (strictly interior)
+  and edge-crossing overlaps stay detected. On the G1 rifle asset the raw
+  overlap count drops from 59,363 false pairs to 0 at region granularity.
+  Regression coverage added in `tests/test_overlap_containment.py` (7 checks).
+
+**Changed**
+
+- The Native (Blender Extensions) edition ships a clean Blender-only ZIP with
+  no RizomUV residues and `EXTERNAL_ENGINE_ENABLED = False`.
+- Verified on Blender 5.2: full test suite green, native build, clean-install
+  gate G3 and full packaging all pass.
+
 ## 0.36.3 - Planar cut for smooth regions instead of the angular mosaic fallback
 
 - `RegionSplitter.split` now closes smooth regions (regions with
