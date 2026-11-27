@@ -66,10 +66,7 @@ def _measure(obj, uv_name):
         obj.data, uv_layer, island_res
     ) if hasattr(_mod("distortion").DistortionAnalyzer, "check_overlaps") else None
 
-    total_uv_area = sum(
-        getattr(isl, "area_uv", getattr(isl, "uv_area", 0.0))
-        for isl in getattr(island_res, "islands", [])
-    )
+    total_uv_area = float(getattr(island_res, "total_uv_area", 0.0) or 0.0)
     overlaps = 0
     if overlap_res is not None:
         overlaps = len(getattr(overlap_res, "overlaps", []) or [])

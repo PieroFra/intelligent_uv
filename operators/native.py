@@ -108,6 +108,19 @@ class NativePipelineMixin:
             )
             self._report("INFO" if relax_ok else "WARNING", relax_msg)
 
+        # Relief cuts need a finished layout to measure, so they run after
+        # relaxation and before the analysis that feeds packing. Smart UV
+        # Project built its own seams, so there is no plan to extend.
+        if (
+            not skip_unwrap
+            and execution_info.get("method") != "smart_project"
+            and bool(getattr(settings, "distortion_relief_cuts", True))
+        ):
+            try:
+                self._relief_cuts(obj, state)
+            except Exception as exc:
+                self._report("WARNING", f"Distortion relief cuts failed: {exc}")
+
         island_analysis = self._analyze_islands(state, native=True)
         state["island_analysis"] = island_analysis
 
@@ -269,6 +282,162 @@ class NativePipelineMixin:
 
         self._final_report(state)
         return True
+
+    def _relief_cuts(self, obj, state):
+        """
+        One round of distortion-guided relief cuts on the worst islands.
+
+        Islands whose interior stayed stretched after unwrap and relaxation
+        get a greedy chain of interior seams, and the mesh is unwrapped again.
+        Each attempt is measured against the layout it started from and kept
+        only when it genuinely helped; otherwise the seams go back exactly the
+        way they were and the layout is rebuilt from them. At most 3 islands,
+        one round: this is a relief valve, not a second solver.
+        """
+        settings = state["settings"]
+        seam_plan = state["seam_plan"]
+        mesh_analysis = state["mesh_analysis"]
+        margin_result = state["margin_result"]
+        is_seam = seam_plan.is_seam
+
+        def _layer():
+            return MinimalUVExecutor.get_uv_layer(
+                obj.data,
+                str(getattr(settings, "uv_layer_name", "SmartUV") or "SmartUV"),
+            )
+
+        def _unwrap():
+            MinimalUVExecutor.execute_unwrap(
+                obj=obj,
+                settings=settings,
+                margin_uv=margin_result.margin_uv,
+                use_seams=True,
+            )
+
+        def _mark(mask):
+            return SeamMarker.mark_real_seams(obj.data, mask)
+
+        def _measure():
+            uv_layer = _layer()
+            if uv_layer is None:
+                return None
+            try:
+                result = DistortionAnalyzer.analyze(
+                    obj.data, uv_layer, mesh_analysis
+                )
+            except Exception:
+                return None
+            if not result.ok:
+                return None
+            return result.density_deviation, result.angle_error_mean
+
+        island_analysis = self._analyze_islands(state, native=True)
+        if island_analysis is None or not island_analysis.ok:
+            return
+
+        uv_layer = _layer()
+        if uv_layer is None or not is_seam:
+            return
+
+        baseline = _measure()
+        if baseline is None:
+            return
+
+        # Rank the stretched islands, worst first: the stronger an island
+        # clears the trigger, the more a cut inside it has to give back.
+        candidates = []
+        for record in (island_analysis.islands or []):
+            faces = record.get("faces", [])
+            try:
+                metrics = recovery.island_stretch_metrics(
+                    obj.data, uv_layer, mesh_analysis, faces
+                )
+            except Exception:
+                metrics = None
+            if not metrics or not metrics.get("triggered"):
+                continue
+            score = max(
+                metrics["angle_error_mean"] / 20.0,
+                metrics["spread"] / 2.5,
+            )
+            candidates.append((score, record.get("id", -1), faces))
+
+        candidates.sort(key=lambda item: item[0], reverse=True)
+
+        kept = 0
+        seams_tried = 0
+
+        for _score, _island_id, faces in candidates[:3]:
+            backup = list(is_seam)
+
+            try:
+                added = recovery.relief_cut_island(
+                    obj.data, uv_layer, mesh_analysis, is_seam, faces
+                )
+            except Exception as exc:
+                self._report("WARNING", f"Relief cuts: island cut failed: {exc}")
+                added = []
+
+            if not added:
+                continue
+            seams_tried += len(added)
+
+            ok, message = _mark(is_seam)
+            if not ok:
+                is_seam[:] = backup
+                _mark(is_seam)
+                self._report("WARNING", f"Relief cuts: {message}")
+                continue
+
+            try:
+                _unwrap()
+            except Exception as exc:
+                self._report(
+                    "WARNING",
+                    f"Relief cuts: re-unwrap failed ({exc}); restoring seams.",
+                )
+                is_seam[:] = backup
+                _mark(is_seam)
+                try:
+                    _unwrap()
+                except Exception:
+                    pass
+                continue
+
+            after = _measure()
+            if after is not None:
+                density_before, angle_before = baseline
+                density_after, angle_after = after
+                improved = (
+                    density_after < density_before
+                    or angle_after < angle_before
+                )
+                degraded = (
+                    density_after > density_before * 1.1
+                    or angle_after > angle_before * 1.1
+                )
+                if improved and not degraded:
+                    kept += 1
+                    baseline = after
+                    continue
+
+            # No measurable improvement: undo the cut and rebuild the layout
+            # it replaced, so packing starts from the better of the two.
+            is_seam[:] = backup
+            _mark(is_seam)
+            try:
+                _unwrap()
+            except Exception as exc:
+                self._report(
+                    "WARNING", f"Relief cuts: restore unwrap failed: {exc}"
+                )
+
+        if seams_tried:
+            self._report(
+                "INFO",
+                f"Relief cuts: {seams_tried} interior seam(s) tried, "
+                f"{kept} island(s) kept the cut.",
+            )
 
     def _analyze_islands(self, state, native):
         # Region ids are per-face and survive the RizomUV round trip, so the
