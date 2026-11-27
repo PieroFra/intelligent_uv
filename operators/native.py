@@ -14,7 +14,7 @@ everything already sits in 0-1.
 
 import bpy
 
-from .. import orientation, recovery, stacking, texture_sets, udim
+from .. import orientation, recovery, stacking, straighten, texture_sets, udim
 from ..distortion import DistortionAnalyzer
 from ..island_extraction import IslandExtractor
 from ..seam_marking import SeamMarker
@@ -120,6 +120,32 @@ class NativePipelineMixin:
                 self._relief_cuts(obj, state)
             except Exception as exc:
                 self._report("WARNING", f"Distortion relief cuts failed: {exc}")
+
+        # Straightening rewrites island interiors onto planar grids, so it
+        # has to precede the analysis that feeds packing. It measures the
+        # layout as relaxation and relief cuts left it, hence its own
+        # pre-straighten analysis pass; the final one runs after it.
+        if (
+            not skip_unwrap
+            and bool(getattr(settings, "straighten_quad_strips", True))
+        ):
+            try:
+                pre_island_analysis = self._analyze_islands(state, native=True)
+                uv_layer = MinimalUVExecutor.get_uv_layer(
+                    obj.data,
+                    str(getattr(settings, "uv_layer_name", "SmartUV") or "SmartUV"),
+                )
+                if (
+                    uv_layer is not None
+                    and pre_island_analysis is not None
+                    and pre_island_analysis.ok
+                ):
+                    straighten.straighten_islands(
+                        obj.data, uv_layer, pre_island_analysis,
+                        report=self._report,
+                    )
+            except Exception as exc:
+                self._report("WARNING", f"Quad strip straightening failed: {exc}")
 
         island_analysis = self._analyze_islands(state, native=True)
         state["island_analysis"] = island_analysis

@@ -123,6 +123,12 @@ class IntelligentUVProperties(bpy.types.PropertyGroup):
         default=True,
     )
 
+    straighten_quad_strips: bpy.props.BoolProperty(
+        name="Straighten Quad Strips",
+        description="Rectify quad-grid and cylindrical strip UV islands before packing",
+        default=True,
+    )
+
     use_udim: bpy.props.BoolProperty(
         name="UDIM Tiles",
         description=(
