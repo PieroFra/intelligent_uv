@@ -32,7 +32,8 @@ $ZipEpoch = [DateTimeOffset]::new(2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
 # Solo runtime. Nessun file di sviluppo entra nel pacchetto.
 $ExcludeDirs = @(
     '.git', '.opencode', '.github', '.idea', '.vscode',
-    '__pycache__', '_esperimenti', 'dist', 'venv', '.venv', 'build', 'tests'
+    '__pycache__', '_esperimenti', 'dist', 'venv', '.venv', 'build', 'tests',
+    'tools'
 )
 $ExcludeNames = @(
     'agents.md', 'opencode.json', 'roadmap.md', '.gitignore', '.gitattributes',

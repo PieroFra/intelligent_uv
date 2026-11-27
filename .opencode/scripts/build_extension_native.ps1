@@ -74,13 +74,12 @@ try {
     $runTxt = $runTxt -replace '(?m)^(\s*# Modal state for the external engine\r?\n)', "    def _start_external(self, context, state, already_modal=False):`r`n        return None`r`n`r`n`$1"
     [IO.File]::WriteAllText($runPath, $runTxt, (New-Object System.Text.UTF8Encoding($false)))
 
-    # manual_io.py: rimuove import rizomuv_bridge e lettura rizomuv_path
-    $mioPath = Join-Path $stage 'manual_io.py'
-    $mioTxt = [IO.File]::ReadAllText($mioPath)
-    $mioTxt = $mioTxt -replace '(?s)def _bridge\(\):.*?return RizomUVBridge\r?\n', "def _bridge():`r`n    return None`r`n"
-    $mioTxt = $mioTxt -replace '(?s)def open_in_rizomuv\(settings, filepath\):.*?(?=\r?\n\r?\ndef )', "def open_in_rizomuv(settings, filepath):`r`n    return False, `"Manual external launch is not available in the Blender-only edition.`""
-    $mioTxt = $mioTxt -replace '(?m)^.*rizomuv_bridge.*\r?\n', ''
-    [IO.File]::WriteAllText($mioPath, $mioTxt, (New-Object System.Text.UTF8Encoding($false)))
+    # manual_io.py: rimosso completamente (usa subprocess e apre il programma
+    # esterno). Gli operatori Export/Import FBX non esistono nell'edizione
+    # nativa: le referenze in __init__.py e ui.py sono rimosse qui sotto, quindi
+    # l'import del modulo non puo' piu' sollevare ImportError.
+    $mioStage = Join-Path $stage 'manual_io.py'
+    if (Test-Path -LiteralPath $mioStage) { Remove-Item -LiteralPath $mioStage -Force }
 
     # properties.py: rimuove proprieta' RizomUV (incluso rizomuv_path EXE picker)
     $propPath = Join-Path $stage 'properties.py'
@@ -95,21 +94,59 @@ try {
     $propTxt = $propTxt -replace '(?s)\r?\n    keep_temp_files: bpy\.props\.BoolProperty\(.*?\r?\n    \)', ''
     [IO.File]::WriteAllText($propPath, $propTxt, (New-Object System.Text.UTF8Encoding($false)))
 
-    # ui.py: rimuove box External Editor (rizomuv_path) e blocco use_rizomuv / rizomuv_link
+    # ui.py: rimuove box External Editor (rizomuv_path), blocco use_rizomuv /
+    # rizomuv_link, le tre righe guida RizomUV e l'import di manual_io (modulo
+    # rimosso). Gli usi degli operatori Export/Import FBX stanno tutti dentro
+    # il box External Editor, rimosso qui sotto.
     $uiPath = Join-Path $stage 'ui.py'
     $uiTxt = [IO.File]::ReadAllText($uiPath)
     $uiTxt = $uiTxt -replace '(?s)\r?\n        # RizomUV round trip: export, work by hand, import\..*?icon=''FILEBROWSER'',\r?\n        \)', ''
     $uiTxt = $uiTxt -replace '(?s)\r?\n        col\.separator\(\)\r?\n        col\.prop\(settings, "use_rizomuv"\).*$', "`r`n"
+    $uiTxt = $uiTxt -replace '(?s)\r?\n    "RizomUV Auto - batch hand-off, waits for the islands to come back\.",\r?\n    "RizomUV Live Link - keeps the session open and syncs both ways\.",\r?\n    "RizomUV Lua Script - drives RizomUV headless, no GUI needed\.",', ''
+    $uiTxt = $uiTxt -replace '(?s)\r?\nfrom \.manual_io import \(.*?\r?\n\)\r?\n', "`r`n"
+    if ($uiTxt -match 'rizom|manual_io') { throw 'NATIVO: ui.py contiene ancora riferimenti a RizomUV o manual_io.' }
     [IO.File]::WriteAllText($uiPath, $uiTxt, (New-Object System.Text.UTF8Encoding($false)))
 
-    # __init__.py: rimuove menzione rizomuv_bridge dalla docstring
+    # Commenti e docstring con riferimenti RizomUV nei moduli runtime.
+    $marPath = Join-Path $stage 'margins.py'
+    $marTxt = [IO.File]::ReadAllText($marPath)
+    $marTxt = $marTxt -replace '(?m)^\s*- RizomUV MarginPX / SpacingPX \(pixels\)\r?\n', ''
+    [IO.File]::WriteAllText($marPath, $marTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    $prePath = Join-Path $stage 'presets.py'
+    $preTxt = [IO.File]::ReadAllText($prePath)
+    $preTxt = $preTxt -replace 'presets should not be able to set the RizomUV executable\r?\n# path or the temp-file debug flags\.', 'presets cannot set the temp-file debug flags.'
+    [IO.File]::WriteAllText($prePath, $preTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    $propPath = Join-Path $stage 'properties.py'
+    $propTxt = [IO.File]::ReadAllText($propPath)
+    $propTxt = $propTxt -replace ' \(shared by native engine and RizomUV\)', ' (shared by the native engine)'
+    $propTxt = $propTxt -replace '(?m)^\s*# RizomUV Engine Settings\r?\n', ''
+    [IO.File]::WriteAllText($propPath, $propTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    $baseOpPath = Join-Path $stage 'operators\base.py'
+    $baseOpTxt = [IO.File]::ReadAllText($baseOpPath)
+    $baseOpTxt = $baseOpTxt -replace 'downstream \(RizomUV reports them as\r?\n        # BijectionFailedIslandIDs and keeps the pre-computed UVs\), so warn', 'downstream, so warn'
+    [IO.File]::WriteAllText($baseOpPath, $baseOpTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    $natOpPath = Join-Path $stage 'operators\native.py'
+    $natOpTxt = [IO.File]::ReadAllText($natOpPath)
+    $natOpTxt = $natOpTxt -replace '# Region ids are per-face and survive the RizomUV round trip, so the\r?\n        # planner partition is a valid hint regardless of the native flag\. The', '# Region ids are per-face, so the planner partition is a valid hint. The'
+    [IO.File]::WriteAllText($natOpPath, $natOpTxt, (New-Object System.Text.UTF8Encoding($false)))
+
+    # __init__.py: docstring senza il ponte esterno, nessun import di manual_io
+    # (modulo rimosso) e CLASSES senza MANUAL_IO_CLASSES.
     $initPath = Join-Path $stage '__init__.py'
     $initTxt = [IO.File]::ReadAllText($initPath)
+    $initTxt = $initTxt -replace 'texel density normalization and an optional RizomUV bridge\.', 'texel density normalization.'
     $initTxt = $initTxt -replace '(?m)^.*rizomuv_bridge.*\r?\n', ''
+    $initTxt = $initTxt -replace '(?m)^from \.manual_io import MANUAL_IO_CLASSES\r?\n', ''
+    $initTxt = $initTxt -replace ' \+ MANUAL_IO_CLASSES', ''
+    if ($initTxt -match 'manual_io') { throw 'NATIVO: __init__.py referenzia ancora manual_io.' }
     [IO.File]::WriteAllText($initPath, $initTxt, (New-Object System.Text.UTF8Encoding($false)))
 
     # Autoverifica del layout nativo nello staging.
-    $excluded = @('rizomuv_bridge.py', 'rizomuv_link.py', 'rizomuv_script.py', 'external.py')
+    $excluded = @('rizomuv_bridge.py', 'rizomuv_link.py', 'rizomuv_script.py', 'external.py', 'manual_io.py')
     foreach ($m in $excluded) {
         if (Test-Path -LiteralPath (Join-Path $stage $m)) { throw "NATIVO: $m presente nello staging extension." }
     }
@@ -164,11 +201,13 @@ try {
         if ($manZip -notmatch ('(?m)^version = "' + [regex]::Escape($version) + '"')) {
             throw "Manifest nello ZIP: versione non $version."
         }
-        # Audit statico su tutti i .py nello ZIP: zero residui ExternalEngine / rizomuv_*
-        $forbiddenPattern = 'ExternalEngine|rizomuv_bridge|rizomuv_link|rizomuv_script|rizomuv_path|rizomuv_exe'
+        # Audit forense su TUTTI i .py e .toml nello ZIP: zero occorrenze dei
+        # pattern del reviewer (RizomUV, subprocess, editor esterno, exe picker,
+        # API di lancio manuale). Qualsiasi hit boccia la build.
+        $forbiddenPattern = 'rizom|subprocess|external editor|\.exe\b|open_in_rizom|use_rizom'
         $badHits = @()
         foreach ($e in $zip.Entries) {
-            if ($e.FullName -notlike '*.py') { continue }
+            if ($e.FullName -notlike '*.py' -and $e.FullName -notlike '*.toml') { continue }
             $sr = New-Object IO.StreamReader($e.Open(), [Text.Encoding]::UTF8)
             try { $pyContent = $sr.ReadToEnd() } finally { $sr.Dispose() }
             if ($pyContent -match $forbiddenPattern) {
