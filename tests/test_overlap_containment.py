@@ -11,6 +11,9 @@ Verifies `DistortionAnalyzer.find_real_overlaps`, `_island_boundary_segments_bul
      generates a bbox candidate (`find_overlaps`) but clears containment
      (even ray-crossing parity -> 0 real overlaps).
   5. Properly crossing edges are detected.
+  6. An island flush against the outer border (touching along a shared seam)
+     is NOT flagged: the containment probe sits on the boundary and reads as
+     outside, while a 0.01-gap island in the same spot stays contained.
 
 Usage:
     blender --factory-startup --background --python tests/test_overlap_containment.py
@@ -250,6 +253,75 @@ def check_crossing_edges_detected(mods):
         _drop(obj)
 
 
+def check_touching_border_not_overlap(mods):
+    DistortionAnalyzer = mods["distortion"].DistortionAnalyzer
+    IslandExtractor = mods["island_extraction"].IslandExtractor
+    MinimalUVExecutor = mods["uv_executor"].MinimalUVExecutor
+
+    # Inner quad flush against the outer square's bottom border: its bbox is
+    # contained in the outer's, its bottom edge coincides with the outer's
+    # border, and its area lies outside the outer outline. Touching along a
+    # shared seam is packing, not overlap.
+    obj = _build_islands_mesh(
+        "b3_touching_border",
+        [
+            [(0.1, 0.1, 0.7, 0.7)],
+            [(0.2, 0.1, 0.5, 0.4)],  # bottom edge on the outer border (v=0.1)
+        ],
+    )
+    try:
+        ia = IslandExtractor.analyze(obj)
+        assert ia.ok and ia.island_count == 2, f"Expected 2 islands, got {ia.island_count}"
+        uv_layer = MinimalUVExecutor.get_uv_layer(obj.data, "SmartUV")
+
+        candidates = DistortionAnalyzer.find_overlaps(ia)
+        assert candidates == [(0, 1)], f"Expected bbox candidate [(0, 1)], got {candidates}"
+
+        seg_0 = _extract_bulk_segments(DistortionAnalyzer, obj.data, uv_layer, ia.islands[0])
+        probe = (0.2, 0.1)  # the containment probe: inner island's first outline vertex
+        assert DistortionAnalyzer._point_on_boundary(probe, seg_0) is True, (
+            "Probe on the shared border must be recognized as on-boundary"
+        )
+        assert DistortionAnalyzer._point_in_boundary(probe, seg_0) is False, (
+            "On-boundary probe must read as outside (touching is not containment)"
+        )
+        assert DistortionAnalyzer._point_in_boundary((0.4, 0.4), seg_0) is True, (
+            "Strictly interior point must still read as inside"
+        )
+
+        result = DistortionAnalyzer.find_real_overlaps(obj.data, uv_layer, ia)
+        assert result == ([], 1, False), f"Expected ([], 1, False), got {result}"
+        return "flush border quad cleared (probe on boundary -> outside), checked=1"
+    finally:
+        _drop(obj)
+
+
+def check_near_boundary_containment_kept(mods):
+    DistortionAnalyzer = mods["distortion"].DistortionAnalyzer
+    IslandExtractor = mods["island_extraction"].IslandExtractor
+    MinimalUVExecutor = mods["uv_executor"].MinimalUVExecutor
+
+    # Same spot as the flush case but with a 0.01 gap: the inner quad sits
+    # strictly inside the outer outline, so containment must stay detected.
+    obj = _build_islands_mesh(
+        "b3_near_boundary_containment",
+        [
+            [(0.1, 0.1, 0.7, 0.7)],
+            [(0.2, 0.11, 0.5, 0.4)],
+        ],
+    )
+    try:
+        ia = IslandExtractor.analyze(obj)
+        assert ia.ok and ia.island_count == 2, f"Expected 2 islands, got {ia.island_count}"
+        uv_layer = MinimalUVExecutor.get_uv_layer(obj.data, "SmartUV")
+
+        result = DistortionAnalyzer.find_real_overlaps(obj.data, uv_layer, ia)
+        assert result == ([(0, 1)], 1, False), f"Expected ([(0, 1)], 1, False), got {result}"
+        return "0.01-gap quad inside outer outline still contained"
+    finally:
+        _drop(obj)
+
+
 def main():
     addon = importlib.import_module(PACKAGE)
     addon.register()
@@ -266,6 +338,8 @@ def main():
             ("adjacent_non_overlapping", check_adjacent_non_overlapping),
             ("concave_u_pocket_outside_outline", check_concave_u_pocket_outside_outline),
             ("crossing_edges_detected", check_crossing_edges_detected),
+            ("touching_border_not_overlap", check_touching_border_not_overlap),
+            ("near_boundary_containment_kept", check_near_boundary_containment_kept),
         ]
         for name, fn in checks:
             try:
